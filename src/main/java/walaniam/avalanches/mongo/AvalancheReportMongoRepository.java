@@ -21,10 +21,8 @@ import static walaniam.avalanches.common.logging.LoggingUtils.logInfo;
 public class AvalancheReportMongoRepository implements AvalancheReportRepository {
 
     private static final Set<IndexConfig> REQUIRED_INDEXES = Set.of(
-        new IndexConfig("date", true, true),
-        new IndexConfig("expirationDate", true, true),
-        new IndexConfig("date", false, true),
-        new IndexConfig("expirationDate", false, true)
+        new IndexConfig("date", false, false),
+        new IndexConfig("expirationDate", false, false)
     );
 
     private static final String DB_NAME = "avalanche";

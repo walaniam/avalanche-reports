@@ -25,7 +25,7 @@ import static walaniam.avalanches.common.logging.LoggingUtils.logWarn;
 @RequiredArgsConstructor
 public class AvalancheReportsFunctionsHandler {
 
-    private static final String DAILY_17_30 = "0 30 17 * * *";
+    private static final String DAILY_18_30 = "0 30 18 * * *";
     private static final String EVERY_2_MINS = "0 */2 * * * *";
 
     private final Function<ExecutionContext, AvalancheReportRepository> repositoryProvider;
@@ -47,7 +47,7 @@ public class AvalancheReportsFunctionsHandler {
     }
 
     @FunctionName("ingestReport")
-    public void ingestReport(@TimerTrigger(name = "ingestReportTrigger", schedule = DAILY_17_30) String timerInfo,
+    public void ingestReport(@TimerTrigger(name = "ingestReportTrigger", schedule = DAILY_18_30) String timerInfo,
                              ExecutionContext context) {
         logInfo(context, "ingestReport triggered {}", timerInfo);
         try {
@@ -59,11 +59,31 @@ public class AvalancheReportsFunctionsHandler {
         }
     }
 
+    @FunctionName("ingestReportOnDemand")
+    public void ingestReportOnDemand(
+        @HttpTrigger(name = "req", methods = HttpMethod.GET, authLevel = AuthorizationLevel.FUNCTION)
+        HttpRequestMessage<String> request,
+        ExecutionContext context
+    ) {
+        logInfo(context, "ingestReport triggered on demand {}", request);
+        try {
+//            var now = LocalDateTime.now();
+            AvalancheReport report = reportClient.fetch(context);
+//            report.getId().setReportDate(now);
+//            report.setReportDate(now);
+//            report.setReportExpirationDate(LocalDateTime.now().plusHours(18));
+            AvalancheReportRepository repository = repositoryProvider.apply(context);
+            repository.save(report);
+        } catch (ReportFetchException e) {
+            logWarn(context, "Report fetch failed", e);
+        }
+    }
+
     @FunctionName("reports")
     public HttpResponseMessage getLatest(
-            @HttpTrigger(name = "req", methods = HttpMethod.GET, authLevel = AuthorizationLevel.ANONYMOUS)
-            HttpRequestMessage<String> request,
-            ExecutionContext context) {
+        @HttpTrigger(name = "req", methods = HttpMethod.GET, authLevel = AuthorizationLevel.ANONYMOUS)
+        HttpRequestMessage<String> request,
+        ExecutionContext context) {
 
         logInfo(context, "Getting latest reports");
 
@@ -107,8 +127,8 @@ public class AvalancheReportsFunctionsHandler {
     }
 
     private static <T> HttpResponseMessage.Builder responseBuilderOf(HttpRequestMessage<String> request,
-                                                      HttpStatus status,
-                                                      Optional<T> message) {
+                                                                     HttpStatus status,
+                                                                     Optional<T> message) {
         HttpResponseMessage.Builder builder = request.createResponseBuilder(status);
         message.ifPresent(builder::body);
         return builder;

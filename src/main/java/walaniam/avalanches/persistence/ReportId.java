@@ -11,11 +11,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Data
 @Builder
-public class AvalancheReport {
-
-    private ReportId id;
-    private int avalancheLevel;
+public class ReportId {
     private LocalDateTime reportDate;
-    private LocalDateTime reportExpirationDate;
-    private String comment;
+    private String reportedBy;
 }

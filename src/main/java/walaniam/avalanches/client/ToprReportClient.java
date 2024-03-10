@@ -6,11 +6,14 @@ import org.htmlunit.WebClient;
 import org.htmlunit.html.DomElement;
 import org.htmlunit.html.HtmlElement;
 import org.htmlunit.html.HtmlPage;
+import walaniam.avalanches.common.time.DateTimeUtils;
 import walaniam.avalanches.persistence.AvalancheReport;
+import walaniam.avalanches.persistence.ReportId;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -20,6 +23,7 @@ import static walaniam.avalanches.common.logging.LoggingUtils.logWarn;
 
 public class ToprReportClient implements AvalancheReportClient {
 
+    private static final String REPORTER = "topr";
     private final String reportUrl = "https://lawiny.topr.pl/";
 
     @Override
@@ -37,12 +41,19 @@ public class ToprReportClient implements AvalancheReportClient {
 
                 var pageWrapper = new PageWrapper(page);
 
+                LocalDateTime reportDate = parseDate(pageWrapper.getReportDate());
+
+                var id = ReportId.builder()
+                    .reportedBy(REPORTER)
+                    .reportDate(reportDate)
+                    .build();
+
                 return AvalancheReport.builder()
+                    .id(id)
                     .avalancheLevel(pageWrapper.getAvalancheLevel())
-                    .reportDate(parseDate(pageWrapper.getReportDate()))
+                    .reportDate(reportDate)
                     .reportExpirationDate(parseDate(pageWrapper.getReportExpirationDate()))
                     .comment(pageWrapper.getComment())
-                    .reportedBy("topr")
                     .build();
 
             } catch (IOException e) {
@@ -56,8 +67,9 @@ public class ToprReportClient implements AvalancheReportClient {
     }
 
     private static LocalDateTime parseDate(String date) {
-        var formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-        return LocalDateTime.parse(date, formatter);
+        var zone = ZoneId.of("Europe/Warsaw");
+        ZonedDateTime zonedDateTime = DateTimeUtils.parseDate(date, zone);
+        return DateTimeUtils.toUtc(zonedDateTime);
     }
 
     @ToString
