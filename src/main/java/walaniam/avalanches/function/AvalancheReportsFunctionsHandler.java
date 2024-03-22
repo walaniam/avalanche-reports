@@ -1,19 +1,21 @@
 package walaniam.avalanches.function;
 
 import com.microsoft.azure.functions.*;
-import com.microsoft.azure.functions.annotation.AuthorizationLevel;
-import com.microsoft.azure.functions.annotation.FunctionName;
-import com.microsoft.azure.functions.annotation.HttpTrigger;
-import com.microsoft.azure.functions.annotation.TimerTrigger;
+import com.microsoft.azure.functions.annotation.*;
 import com.mongodb.MongoException;
 import lombok.RequiredArgsConstructor;
 import walaniam.avalanches.client.AvalancheReportClient;
 import walaniam.avalanches.client.ReportFetchException;
+import walaniam.avalanches.client.ReportFetchResult;
 import walaniam.avalanches.client.ToprReportClient;
 import walaniam.avalanches.mongo.AvalancheReportMongoRepository;
+import walaniam.avalanches.mongo.BinaryReportMongoRepository;
 import walaniam.avalanches.persistence.AvalancheReport;
 import walaniam.avalanches.persistence.AvalancheReportRepository;
+import walaniam.avalanches.persistence.BinaryReport;
+import walaniam.avalanches.persistence.BinaryReportRepository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -28,7 +30,8 @@ public class AvalancheReportsFunctionsHandler {
     private static final String DAILY_18_30 = "0 30 18 * * *";
     private static final String EVERY_2_MINS = "0 */2 * * * *";
 
-    private final Function<ExecutionContext, AvalancheReportRepository> repositoryProvider;
+    private final Function<ExecutionContext, AvalancheReportRepository> reportRepositoryProvider;
+    private final Function<ExecutionContext, BinaryReportRepository> binaryReportRepositoryProvider;
     private final AvalancheReportClient reportClient = new ToprReportClient();
 
     @SuppressWarnings("unused")
@@ -43,7 +46,10 @@ public class AvalancheReportsFunctionsHandler {
     }
 
     public AvalancheReportsFunctionsHandler(String connectionString) {
-        this(context -> new AvalancheReportMongoRepository(context, connectionString));
+        this(
+            context -> new AvalancheReportMongoRepository(context, connectionString),
+            context -> new BinaryReportMongoRepository(context, connectionString)
+        );
     }
 
     @FunctionName("ingestReport")
@@ -51,9 +57,13 @@ public class AvalancheReportsFunctionsHandler {
                              ExecutionContext context) {
         logInfo(context, "ingestReport triggered {}", timerInfo);
         try {
-            AvalancheReport report = reportClient.fetch(context);
-            AvalancheReportRepository repository = repositoryProvider.apply(context);
+            ReportFetchResult fetchResult = reportClient.fetch(context);
+            AvalancheReport report = fetchResult.getReport();
+            AvalancheReportRepository repository = reportRepositoryProvider.apply(context);
             repository.save(report);
+            Optional.ofNullable(fetchResult.getBinaryReport()).ifPresent(binaryReport ->
+                binaryReportRepositoryProvider.apply(context).upsert(binaryReport)
+            );
         } catch (ReportFetchException e) {
             logWarn(context, "Report fetch failed, timer: " + timerInfo, e);
         }
@@ -68,12 +78,16 @@ public class AvalancheReportsFunctionsHandler {
         logInfo(context, "ingestReport triggered on demand {}", request);
         try {
 //            var now = LocalDateTime.now();
-            AvalancheReport report = reportClient.fetch(context);
+            ReportFetchResult fetchResult = reportClient.fetch(context);
+            AvalancheReport report = fetchResult.getReport();
 //            report.getId().setReportDate(now);
 //            report.setReportDate(now);
 //            report.setReportExpirationDate(LocalDateTime.now().plusHours(18));
-            AvalancheReportRepository repository = repositoryProvider.apply(context);
-            repository.save(report);
+//            AvalancheReportRepository repository = reportRepositoryProvider.apply(context);
+//            repository.save(report);
+            Optional.ofNullable(fetchResult.getBinaryReport()).ifPresent(binaryReport ->
+                binaryReportRepositoryProvider.apply(context).upsert(binaryReport)
+            );
         } catch (ReportFetchException e) {
             logWarn(context, "Report fetch failed", e);
         }
@@ -87,7 +101,7 @@ public class AvalancheReportsFunctionsHandler {
 
         logInfo(context, "Getting latest reports");
 
-        AvalancheReportRepository repository = repositoryProvider.apply(context);
+        AvalancheReportRepository repository = reportRepositoryProvider.apply(context);
         try {
             List<AvalancheReportDto> latest = repository.getLatest(20).stream()
                 .map(AvalancheReportMapper.INSTANCE::toDataView)
@@ -109,7 +123,7 @@ public class AvalancheReportsFunctionsHandler {
 
         logInfo(context, "Getting latest single report");
 
-        AvalancheReportRepository repository = repositoryProvider.apply(context);
+        AvalancheReportRepository repository = reportRepositoryProvider.apply(context);
         try {
             AvalancheReportDto latest = repository.getLatest(1).stream()
                 .map(AvalancheReportMapper.INSTANCE::toDataView)
@@ -117,6 +131,35 @@ public class AvalancheReportsFunctionsHandler {
                 .orElseThrow();
             HttpResponseMessage.Builder responseBuilder = responseBuilderOf(request, HttpStatus.OK, Optional.of(latest));
             responseBuilder.header("Content-Type", "application/json");
+            return responseBuilder.build();
+        } catch (NoSuchElementException e) {
+            return responseOf(request, HttpStatus.NOT_FOUND, Optional.empty());
+        } catch (MongoException e) {
+            logWarn(context, "read failed", e);
+            return responseOf(request, HttpStatus.INTERNAL_SERVER_ERROR, Optional.of(String.valueOf(e)));
+        }
+    }
+
+    @FunctionName("pdfReport")
+    public HttpResponseMessage getPdfReport(
+        @HttpTrigger(
+            name = "req", methods = HttpMethod.GET, authLevel = AuthorizationLevel.ANONYMOUS,
+            route = "pdfs/{day}"
+        )
+        HttpRequestMessage<String> request,
+        @BindingName("day") String day,
+        ExecutionContext context) {
+
+        LocalDate localDate =  LocalDate.parse(day);
+
+        logInfo(context, "Getting PDF report from day: %s", localDate);
+
+        BinaryReportRepository repository = binaryReportRepositoryProvider.apply(context);
+        try {
+            BinaryReport pdfReport = repository.findByDay(localDate).orElseThrow();
+            HttpResponseMessage.Builder responseBuilder = responseBuilderOf(
+                request, HttpStatus.OK, Optional.of(pdfReport.getBytes()));
+            responseBuilder.header("Content-Type", pdfReport.getContentType());
             return responseBuilder.build();
         } catch (NoSuchElementException e) {
             return responseOf(request, HttpStatus.NOT_FOUND, Optional.empty());

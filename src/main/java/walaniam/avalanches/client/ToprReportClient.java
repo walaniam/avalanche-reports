@@ -8,9 +8,15 @@ import org.htmlunit.html.HtmlElement;
 import org.htmlunit.html.HtmlPage;
 import walaniam.avalanches.common.time.DateTimeUtils;
 import walaniam.avalanches.persistence.AvalancheReport;
+import walaniam.avalanches.persistence.BinaryReport;
 import walaniam.avalanches.persistence.ReportId;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -25,9 +31,10 @@ public class ToprReportClient implements AvalancheReportClient {
 
     private static final String REPORTER = "topr";
     private final String reportUrl = "https://lawiny.topr.pl/";
+    private final String pdfReportUrl = "https://lawiny.topr.pl/viewpdf";
 
     @Override
-    public AvalancheReport fetch(ExecutionContext executionContext) throws ReportFetchException {
+    public ReportFetchResult fetch(ExecutionContext executionContext) throws ReportFetchException {
         int errors = 0;
         Exception lastException;
         do {
@@ -48,13 +55,29 @@ public class ToprReportClient implements AvalancheReportClient {
                     .reportDate(reportDate)
                     .build();
 
-                return AvalancheReport.builder()
+                var avalancheReport = AvalancheReport.builder()
                     .id(id)
                     .avalancheLevel(pageWrapper.getAvalancheLevel())
                     .reportDate(reportDate)
                     .reportExpirationDate(parseDate(pageWrapper.getReportExpirationDate()))
                     .comment(pageWrapper.getComment())
                     .build();
+
+                var fetchResultBuilder = ReportFetchResult
+                    .builder()
+                    .report(avalancheReport);
+
+                try {
+                    BinaryReport binaryReport = fetchBinaryReport(executionContext)
+                        .id(id)
+                        .day(id.getReportDate().toLocalDate())
+                        .build();
+                    fetchResultBuilder.binaryReport(binaryReport);
+                } catch (Exception e) {
+                    logWarn(executionContext, "Failed to fetch binary report", e);
+                }
+
+                return fetchResultBuilder.build();
 
             } catch (IOException e) {
                 logWarn(executionContext, "Failed", e);
@@ -64,6 +87,32 @@ public class ToprReportClient implements AvalancheReportClient {
         } while (errors < 2);
 
         throw new ReportFetchException("Fetch failed after attempts: " + errors, lastException);
+    }
+
+    private BinaryReport.BinaryReportBuilder fetchBinaryReport(ExecutionContext executionContext) throws Exception {
+
+        HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(10))
+            .build();
+
+        HttpRequest request = HttpRequest.newBuilder()
+            .GET()
+            .uri(new URI(pdfReportUrl))
+            .build();
+
+        logInfo(executionContext, "Fetching binary report from %s", pdfReportUrl);
+
+        HttpResponse<byte[]> response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
+
+        logInfo(executionContext, "Response from %s returned status %s", pdfReportUrl, response.statusCode());
+
+        if (response.statusCode() / 100 == 2) {
+            return BinaryReport.builder()
+                .bytes(response.body())
+                .contentType("application/pdf");
+        } else {
+            throw new RuntimeException("Got status: " + response.statusCode());
+        }
     }
 
     private static LocalDateTime parseDate(String date) {

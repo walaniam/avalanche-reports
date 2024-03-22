@@ -1,25 +1,27 @@
 package walaniam.avalanches;
 
 import com.microsoft.azure.functions.ExecutionContext;
-import com.microsoft.azure.functions.HttpRequestMessage;
-import com.microsoft.azure.functions.HttpResponseMessage;
-import com.microsoft.azure.functions.HttpStatus;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.mockito.stubbing.Answer;
+import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 import walaniam.avalanches.function.AvalancheReportsFunctionsHandler;
+import walaniam.avalanches.mongo.BinaryReportMongoRepository;
+import walaniam.avalanches.persistence.BinaryReport;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.logging.Logger;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 
 
 @Testcontainers
-class AvalancheReportsFunctionsHandlerTest {
+class AvalancheReportsFunctionsHandlerIT {
 
     @Container
     private static final MongoDBContainer MONGO_DB_CONTAINER = new MongoDBContainer(
@@ -35,10 +37,20 @@ class AvalancheReportsFunctionsHandlerTest {
         underTest = new AvalancheReportsFunctionsHandler(MONGO_DB_CONTAINER.getConnectionString());
     }
 
-    private static void mockResponseBuilderOf(HttpRequestMessage requestMessage) {
-        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
-            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
-            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
-        }).when(requestMessage).createResponseBuilder(any(HttpStatus.class));
+    @Test
+    void shouldFetchAndStoreReport() {
+
+        underTest.ingestReport("timer info", executionContext);
+
+        var binaryRepository = new BinaryReportMongoRepository(
+            executionContext,
+            MONGO_DB_CONTAINER.getConnectionString()
+        );
+
+        List<BinaryReport> allLatest = binaryRepository.getLatest(10);
+        Assertions.assertEquals(1, allLatest.size());
+
+        Optional<BinaryReport> todayPdfReport = binaryRepository.findByDay(allLatest.stream().findFirst().get().getDay());
+        Assertions.assertTrue(todayPdfReport.isPresent());
     }
 }
