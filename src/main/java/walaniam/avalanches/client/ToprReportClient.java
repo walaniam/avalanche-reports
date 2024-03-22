@@ -70,7 +70,7 @@ public class ToprReportClient implements AvalancheReportClient {
                 try {
                     BinaryReport binaryReport = fetchBinaryReport(executionContext)
                         .id(id)
-                        .day(id.getReportDate().toLocalDate())
+                        .day(avalancheReport.getReportExpirationDate().toLocalDate())
                         .build();
                     fetchResultBuilder.binaryReport(binaryReport);
                 } catch (Exception e) {

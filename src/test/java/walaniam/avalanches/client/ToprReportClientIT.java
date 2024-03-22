@@ -44,6 +44,6 @@ class ToprReportClientIT {
         BinaryReport binaryReport = fetchResult.getBinaryReport();
         assertThat(binaryReport).extracting(BinaryReport::getId).isEqualTo(report.getId());
         assertThat(binaryReport).extracting(BinaryReport::getBytes).isNotNull();
-        assertThat(binaryReport.getDay()).isEqualTo(report.getId().getReportDate().toLocalDate());
+        assertThat(binaryReport.getDay()).isEqualTo(report.getReportExpirationDate().toLocalDate());
     }
 }
