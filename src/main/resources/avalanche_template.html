@@ -79,7 +79,15 @@
     let currentChartInstance = null; // To keep track of the Chart instance
 
     function updateButtons() {
-      document.getElementById('nextPage').disabled = (currentPage >= 0);
+      const prevBtn = document.getElementById('prevPage');
+      const nextBtn = document.getElementById('nextPage');
+
+      // Next is disabled if we are at the most current page (currentPage === 0)
+      nextBtn.disabled = (currentPage === 0);
+
+      // Previous is disabled only if we reached the oldest page (if you know totalPagesBack)
+      // For now, assume it's always enabled
+      prevBtn.disabled = false;
     }
 
     function formatDate(dateString) {
@@ -176,13 +184,11 @@
 
     // Button event handlers
     document.getElementById('prevPage').addEventListener('click', () => {
-      if (currentPage > 0) {
-        loadReports(currentPage + 1);
-      }
+      loadReports(currentPage + 1); // older data
     });
 
     document.getElementById('nextPage').addEventListener('click', () => {
-      loadReports(currentPage - 1);
+      loadReports(currentPage - 1); // newer data
     });
 
     // Initialize
