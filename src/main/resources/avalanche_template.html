@@ -63,7 +63,7 @@
       const data = await response.json();
 
       // sort by date ascending
-      data.sort((a, b) => new Date(a.reportDate) - new Date(b.reportDate));
+      data.sort((a, b) => new Date(a.reportExpirationDate) - new Date(b.reportExpirationDate));
 
       return data;
     }
@@ -73,9 +73,18 @@
       return d.toISOString().substring(0, 10);
     }
 
+    function getColorByLevel(level) {
+      if (level <= 1) return "green";
+      if (level == 2) return "yellow";
+      if (level == 3) return "orange";
+      if (level >= 4) return "red";
+      return "gray"; // fallback
+    }
+
     function createChart(reports) {
-      const labels = reports.map(r => formatDate(r.reportDate));
+      const labels = reports.map(r => formatDate(r.reportExpirationDate));
       const levels = reports.map(r => r.avalancheLevel);
+      const barColors = levels.map(level => getColorByLevel(level));
 
       const ctx = document.getElementById("avalancheChart").getContext("2d");
 
@@ -86,7 +95,7 @@
           datasets: [{
             label: "Avalanche Level",
             data: levels,
-            backgroundColor: "#ff9800"
+            backgroundColor: barColors
           }]
         },
         options: {
@@ -117,12 +126,12 @@
     function showComment(report) {
       document.getElementById("commentBox").style.display = "block";
       document.getElementById("commentDate").textContent =
-        "Report for " + formatDate(report.reportDate);
+        "Report for " + formatDate(report.reportExpirationDate);
 
       document.getElementById("commentText").textContent = report.comment;
 
       document.getElementById("commentMeta").textContent =
-        `Reported by ${report.reportedBy}, valid until ${formatDate(report.reportExpirationDate)}`;
+        `Reported by ${report.reportedBy}, at ${report.reportDate}, valid until ${report.reportExpirationDate}`;
     }
 
     // Init
