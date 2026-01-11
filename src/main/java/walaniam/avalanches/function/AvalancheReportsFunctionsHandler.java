@@ -103,9 +103,13 @@ public class AvalancheReportsFunctionsHandler {
 
         logInfo(context, "Getting latest reports");
 
+        int page = Integer.parseInt(request.getQueryParameters().getOrDefault("page", "0"));
+        int size = Integer.parseInt(request.getQueryParameters().getOrDefault("size", "20"));
+        int skip = page * size;
+
         AvalancheReportRepository repository = reportRepositoryProvider.apply(context);
         try {
-            List<AvalancheReportDto> latest = repository.getLatest(20).stream()
+            List<AvalancheReportDto> latest = repository.getLatest(skip, size).stream()
                 .map(AvalancheReportMapper.INSTANCE::toDataView)
                 .toList();
             HttpResponseMessage.Builder responseBuilder = responseBuilderOf(request, HttpStatus.OK, Optional.of(latest));
@@ -153,7 +157,7 @@ public class AvalancheReportsFunctionsHandler {
 
         AvalancheReportRepository repository = reportRepositoryProvider.apply(context);
         try {
-            AvalancheReportDto latest = repository.getLatest(1).stream()
+            AvalancheReportDto latest = repository.getLatest(0, 1).stream()
                 .map(AvalancheReportMapper.INSTANCE::toDataView)
                 .findFirst()
                 .orElseThrow();
