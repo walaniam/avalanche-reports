@@ -15,6 +15,8 @@ import walaniam.avalanches.persistence.AvalancheReportRepository;
 import walaniam.avalanches.persistence.BinaryReport;
 import walaniam.avalanches.persistence.BinaryReportRepository;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -115,6 +117,32 @@ public class AvalancheReportsFunctionsHandler {
         }
     }
 
+    @FunctionName("avalanche")
+    public HttpResponseMessage getHtmlPage(
+        @HttpTrigger(name = "req", methods = {HttpMethod.GET}, authLevel = AuthorizationLevel.ANONYMOUS)
+        HttpRequestMessage<String> request,
+        ExecutionContext context) {
+
+        try (InputStream is = getClass().getResourceAsStream("/avalanche_template.html")) {
+            if (is == null) {
+                logWarn(context, "avalanche_template.html not found in resources", null);
+                return request.createResponseBuilder(HttpStatus.NOT_FOUND)
+                    .body("Page not found")
+                    .build();
+            }
+            String htmlContent = new String(is.readAllBytes());
+            return request.createResponseBuilder(HttpStatus.OK)
+                .header("Content-Type", "text/html")
+                .body(htmlContent)
+                .build();
+        } catch (IOException e) {
+            logWarn(context, "Failed to read avalanche_template.html", e);
+            return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error loading page")
+                .build();
+        }
+    }
+
     @FunctionName("report")
     public HttpResponseMessage getSingleLatest(
         @HttpTrigger(name = "req", methods = HttpMethod.GET, authLevel = AuthorizationLevel.ANONYMOUS)
@@ -150,7 +178,7 @@ public class AvalancheReportsFunctionsHandler {
         @BindingName("day") String day,
         ExecutionContext context) {
 
-        LocalDate localDate =  LocalDate.parse(day);
+        LocalDate localDate = LocalDate.parse(day);
 
         logInfo(context, "Getting PDF report from day: %s", localDate);
 

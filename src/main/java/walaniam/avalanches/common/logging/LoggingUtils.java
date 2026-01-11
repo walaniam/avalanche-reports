@@ -24,6 +24,8 @@ public class LoggingUtils {
         var log = context.getLogger();
         message = String.format("[%s] %s", context.getFunctionName(), message);
         log.log(Level.WARNING, message);
-        t.printStackTrace();
+        if (t != null) {
+            t.printStackTrace();
+        }
     }
 }

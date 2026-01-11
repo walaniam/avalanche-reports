@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Avalanche Reports</title>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+          font-family: Arial, sans-serif;
+          background: #f5f7fa;
+          margin: 0;
+          padding: 20px;
+        }
+
+        h1 {
+          text-align: center;
+        }
+
+        .container {
+          max-width: 900px;
+          margin: auto;
+          background: white;
+          padding: 20px;
+          border-radius: 8px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        #commentBox {
+          margin-top: 20px;
+          padding: 15px;
+          border-left: 4px solid #0077cc;
+          background: #f0f6ff;
+          display: none;
+        }
+
+        #commentBox h3 {
+          margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Avalanche Danger Levels</h1>
+
+    <canvas id="avalancheChart"></canvas>
+
+    <div id="commentBox">
+        <h3 id="commentDate"></h3>
+        <p id="commentText"></p>
+        <small id="commentMeta"></small>
+    </div>
+</div>
+
+<script>
+    const API_URL = "reports";
+
+    async function loadReports() {
+      const response = await fetch(API_URL);
+      const data = await response.json();
+
+      // sort by date ascending
+      data.sort((a, b) => new Date(a.reportDate) - new Date(b.reportDate));
+
+      return data;
+    }
+
+    function formatDate(dateString) {
+      const d = new Date(dateString);
+      return d.toISOString().substring(0, 10);
+    }
+
+    function createChart(reports) {
+      const labels = reports.map(r => formatDate(r.reportDate));
+      const levels = reports.map(r => r.avalancheLevel);
+
+      const ctx = document.getElementById("avalancheChart").getContext("2d");
+
+      const chart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{
+            label: "Avalanche Level",
+            data: levels,
+            backgroundColor: "#ff9800"
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              min: 0,
+              max: 5,
+              ticks: {
+                stepSize: 1
+              },
+              title: {
+                display: true,
+                text: "Danger Level"
+              }
+            }
+          },
+          onClick: (event, elements) => {
+            if (elements.length > 0) {
+              const index = elements[0].index;
+              showComment(reports[index]);
+            }
+          }
+        }
+      });
+    }
+
+    function showComment(report) {
+      document.getElementById("commentBox").style.display = "block";
+      document.getElementById("commentDate").textContent =
+        "Report for " + formatDate(report.reportDate);
+
+      document.getElementById("commentText").textContent = report.comment;
+
+      document.getElementById("commentMeta").textContent =
+        `Reported by ${report.reportedBy}, valid until ${formatDate(report.reportExpirationDate)}`;
+    }
+
+    // Init
+    loadReports()
+      .then(createChart)
+      .catch(err => {
+        console.error(err);
+        alert("Failed to load avalanche reports");
+      });
+</script>
+
+</body>
+</html>
