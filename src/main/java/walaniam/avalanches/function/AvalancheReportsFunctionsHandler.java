@@ -15,6 +15,8 @@ import walaniam.avalanches.persistence.AvalancheReportRepository;
 import walaniam.avalanches.persistence.BinaryReport;
 import walaniam.avalanches.persistence.BinaryReportRepository;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -101,9 +103,13 @@ public class AvalancheReportsFunctionsHandler {
 
         logInfo(context, "Getting latest reports");
 
+        int page = Integer.parseInt(request.getQueryParameters().getOrDefault("page", "0"));
+        int size = Integer.parseInt(request.getQueryParameters().getOrDefault("size", "20"));
+        int skip = page * size;
+
         AvalancheReportRepository repository = reportRepositoryProvider.apply(context);
         try {
-            List<AvalancheReportDto> latest = repository.getLatest(20).stream()
+            List<AvalancheReportDto> latest = repository.getLatest(skip, size).stream()
                 .map(AvalancheReportMapper.INSTANCE::toDataView)
                 .toList();
             HttpResponseMessage.Builder responseBuilder = responseBuilderOf(request, HttpStatus.OK, Optional.of(latest));
@@ -112,6 +118,32 @@ public class AvalancheReportsFunctionsHandler {
         } catch (MongoException e) {
             logWarn(context, "read failed", e);
             return responseOf(request, HttpStatus.INTERNAL_SERVER_ERROR, Optional.of(String.valueOf(e)));
+        }
+    }
+
+    @FunctionName("avalanche")
+    public HttpResponseMessage getHtmlPage(
+        @HttpTrigger(name = "req", methods = {HttpMethod.GET}, authLevel = AuthorizationLevel.ANONYMOUS)
+        HttpRequestMessage<String> request,
+        ExecutionContext context) {
+
+        try (InputStream is = getClass().getResourceAsStream("/avalanche_template.html")) {
+            if (is == null) {
+                logWarn(context, "avalanche_template.html not found in resources", null);
+                return request.createResponseBuilder(HttpStatus.NOT_FOUND)
+                    .body("Page not found")
+                    .build();
+            }
+            String htmlContent = new String(is.readAllBytes());
+            return request.createResponseBuilder(HttpStatus.OK)
+                .header("Content-Type", "text/html")
+                .body(htmlContent)
+                .build();
+        } catch (IOException e) {
+            logWarn(context, "Failed to read avalanche_template.html", e);
+            return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error loading page")
+                .build();
         }
     }
 
@@ -125,7 +157,7 @@ public class AvalancheReportsFunctionsHandler {
 
         AvalancheReportRepository repository = reportRepositoryProvider.apply(context);
         try {
-            AvalancheReportDto latest = repository.getLatest(1).stream()
+            AvalancheReportDto latest = repository.getLatest(0, 1).stream()
                 .map(AvalancheReportMapper.INSTANCE::toDataView)
                 .findFirst()
                 .orElseThrow();
@@ -150,7 +182,7 @@ public class AvalancheReportsFunctionsHandler {
         @BindingName("day") String day,
         ExecutionContext context) {
 
-        LocalDate localDate =  LocalDate.parse(day);
+        LocalDate localDate = LocalDate.parse(day);
 
         logInfo(context, "Getting PDF report from day: %s", localDate);
 

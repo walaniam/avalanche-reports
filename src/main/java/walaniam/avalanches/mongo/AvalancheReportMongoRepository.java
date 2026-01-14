@@ -93,7 +93,7 @@ public class AvalancheReportMongoRepository implements AvalancheReportRepository
     }
 
     @Override
-    public List<AvalancheReport> getLatest(int limit) {
+    public List<AvalancheReport> getLatest(int skip, int limit) {
         logInfo(context, "Getting %s latest reports", limit);
         if (limit < 0 || limit > 1000) {
             throw new IllegalArgumentException("Limit must be in <0, 1000>");
@@ -101,6 +101,7 @@ public class AvalancheReportMongoRepository implements AvalancheReportRepository
         return mongoExecutor.executeWithResult(collection -> collection
             .find(AvalancheReport.class)
             .sort(Sorts.descending("expirationDate"))
+            .skip(skip)
             .limit(limit)
             .into(new ArrayList<>()));
     }
