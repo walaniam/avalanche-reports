@@ -13,5 +13,6 @@ import java.time.LocalDateTime;
 @Builder
 public class ReportId {
     private LocalDateTime reportDate;
+    private String regionName;
     private String reportedBy;
 }
