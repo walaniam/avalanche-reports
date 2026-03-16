@@ -3,8 +3,8 @@ package walaniam.avalanches.client.sk;
 import com.microsoft.azure.functions.ExecutionContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import walaniam.avalanches.client.ReportFetchException;
-import walaniam.avalanches.client.ReportFetchResult;
+import walaniam.avalanches.client.api.ReportFetchException;
+import walaniam.avalanches.client.api.ReportFetchResult;
 import walaniam.avalanches.persistence.AvalancheReport;
 import walaniam.avalanches.persistence.ReportId;
 

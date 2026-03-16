@@ -1,10 +1,6 @@
-package walaniam.avalanches.client;
+package walaniam.avalanches.client.api;
 
 public class ReportFetchException extends Exception {
-
-    public ReportFetchException(String message) {
-        super(message);
-    }
 
     public ReportFetchException(String message, Throwable cause) {
         super(message, cause);

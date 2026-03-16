@@ -1,4 +1,4 @@
-package walaniam.avalanches.client;
+package walaniam.avalanches.client.api;
 
 import lombok.Builder;
 import lombok.Getter;

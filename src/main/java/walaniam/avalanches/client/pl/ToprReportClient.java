@@ -1,4 +1,4 @@
-package walaniam.avalanches.client;
+package walaniam.avalanches.client.pl;
 
 import com.microsoft.azure.functions.ExecutionContext;
 import lombok.ToString;
@@ -6,6 +6,9 @@ import org.htmlunit.WebClient;
 import org.htmlunit.html.DomElement;
 import org.htmlunit.html.HtmlElement;
 import org.htmlunit.html.HtmlPage;
+import walaniam.avalanches.client.api.AvalancheReportClient;
+import walaniam.avalanches.client.api.ReportFetchException;
+import walaniam.avalanches.client.api.ReportFetchResult;
 import walaniam.avalanches.common.time.DateTimeUtils;
 import walaniam.avalanches.persistence.AvalancheReport;
 import walaniam.avalanches.persistence.BinaryReport;
