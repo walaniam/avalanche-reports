@@ -34,14 +34,16 @@ public class SkReportAdapter implements AvalancheReportClient {
     static final String REPORTER = "sk-laviny";
 
     private final SkReportClient skReportClient;
+    private final String binaryReportUrlTemplate;
     private final RegionsMapper regionsMapper = new RegionsMapper();
 
     public SkReportAdapter() {
-        this(new SkReportClient());
+        this(new SkReportClient(), BINARY_REPORT_URL);
     }
 
-    SkReportAdapter(SkReportClient skReportClient) {
+    SkReportAdapter(SkReportClient skReportClient, String binaryReportUrlTemplate) {
         this.skReportClient = skReportClient;
+        this.binaryReportUrlTemplate = binaryReportUrlTemplate;
     }
 
     @Override
@@ -108,9 +110,9 @@ public class SkReportAdapter implements AvalancheReportClient {
         }
     }
 
-    private static String resolveBinaryReportUrl(LocalDateTime reportExpirationDate) {
+    private String resolveBinaryReportUrl(LocalDateTime reportExpirationDate) {
         String date = reportExpirationDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-        return BINARY_REPORT_URL.replace("{DATE}", date);
+        return binaryReportUrlTemplate.replace("{DATE}", date);
     }
 
     List<AvalancheReport> adapt(SkBulletin bulletin) {

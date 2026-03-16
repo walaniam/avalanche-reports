@@ -65,7 +65,7 @@ public class SkReportClient {
     /**
      * Parses a CAAMLv5 BulletinEAWS XML stream into a {@link List}.
      */
-    public List<SkBulletin> parse(InputStream xmlStream) throws Exception {
+    List<SkBulletin> parse(InputStream xmlStream) throws Exception {
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         dbf.setNamespaceAware(true);
         DocumentBuilder db = dbf.newDocumentBuilder();

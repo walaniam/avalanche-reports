@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<ObsCollection xmlns="http://caaml.org/Schemas/V5.0/Profiles/BulletinEAWS" xmlns:gml="http://www.opengis.net/gml" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xml:lang="en" xsi:schemaLocation="http://caaml.org/Schemas/V5.0/Profiles/BulletinEAWS http://caaml.org/Schemas/V5.0/Profiles/BulletinEAWS/CAAMLv5_BulletinEAWS.xsd">
+  <metaDataProperty>
+    <MetaData>
+      <dateTimeReport>2026-02-23T16:00:00Z</dateTimeReport>
+      <srcRef>
+        <Operation>
+          <name>Avalances.sk</name>
+        </Operation>
+      </srcRef>
+    </MetaData>
+  </metaDataProperty>
+  <observations>
+    <Bulletin gml:id="478cf911-6f00-4161-a024-534a7c1ab171" xml:lang="en">
+      <metaDataProperty>
+        <MetaData>
+          <dateTimeReport>2026-02-23T16:00:00Z</dateTimeReport>
+          <srcRef>
+            <Operation>
+              <name>Avalances.sk</name>
+            </Operation>
+          </srcRef>
+        </MetaData>
+      </metaDataProperty>
+      <validTime>
+        <TimePeriod>
+          <beginPosition>2026-02-23T23:00:00Z</beginPosition>
+          <endPosition>2026-02-24T23:00:00Z</endPosition>
+        </TimePeriod>
+      </validTime>
+      <srcRef>
+        <Operation>
+          <name>Avalanche.report</name>
+        </Operation>
+      </srcRef>
+      <locRef xlink:href="SK-01"/>
+      <locRef xlink:href="SK-02"/>
+      <locRef xlink:href="SK-03"/>
+      <bulletinResultsOf>
+        <BulletinMeasurements>
+          <dangerRatings>
+            <DangerRating>
+              <validElevation xlink:href="ElevationRange_TreelineHi"/>
+              <mainValue>3</mainValue>
+            </DangerRating>
+            <DangerRating>
+              <validElevation xlink:href="ElevationRange_TreelineLw"/>
+              <mainValue>2</mainValue>
+            </DangerRating>
+          </dangerRatings>
+          <avProblems>
+            <AvProblem>
+              <type>new snow</type>
+              <validAspect xlink:href="AspectRange_w"/>
+              <validAspect xlink:href="AspectRange_e"/>
+              <validAspect xlink:href="AspectRange_nw"/>
+              <validAspect xlink:href="AspectRange_ne"/>
+              <validAspect xlink:href="AspectRange_sw"/>
+              <validAspect xlink:href="AspectRange_n"/>
+              <validAspect xlink:href="AspectRange_s"/>
+              <validAspect xlink:href="AspectRange_se"/>
+              <validElevation xlink:href="ElevationRange_TreelineHi"/>
+            </AvProblem>
+            <AvProblem>
+              <type>old snow</type>
+              <validAspect xlink:href="AspectRange_w"/>
+              <validAspect xlink:href="AspectRange_e"/>
+              <validAspect xlink:href="AspectRange_nw"/>
+              <validAspect xlink:href="AspectRange_ne"/>
+              <validAspect xlink:href="AspectRange_n"/>
+              <validElevation xlink:href="ElevationRange_1800Hi"/>
+            </AvProblem>
+          </avProblems>
+          <tendency>
+            <type>increasing</type>
+            <validTime>
+              <TimePeriod>
+                <beginPosition>2026-02-24T23:00:00Z</beginPosition>
+                <endPosition>2026-02-25T23:00:00Z</endPosition>
+              </TimePeriod>
+            </validTime>
+          </tendency>
+          <avActivityHighlights>Watch out for snow slabs and pillows of new snow.</avActivityHighlights>
+          <avActivityComment>In the High and Western Tatras there is a considerable avalanche danger (3rd level). We expect 20 and in places up to 30 cm of new snow during the day. Snow will fall on less stable layers of older snow. Locally on hard ground. In addition, there are still weak layers of facetedd snow in the snowpack on northern orientations. Spontaneous avalanches of new snow may also occur, especially on steep slopes and in rock faces. Strong north-westerly winds will worsen the situation.</avActivityComment>
+          <snowpackStructureComment>In the northern sector and at the highest altitudes, there are unstable layers of square-grained snow in the snow cover. 20 and in places up to 30 cm of new snow will fall. Above 1500 m above sea level, the snow is dry, wind-blown and unevenly distributed. Snow cover remains well below average, especially at altitudes below 1500 m.</snowpackStructureComment>
+          <tendencyComment>With snowfall increasing.</tendencyComment>
+        </BulletinMeasurements>
+      </bulletinResultsOf>
+    </Bulletin>
+    <Bulletin gml:id="af7441c5-4ecc-494d-99fc-3e2e82885711" xml:lang="en">
+      <metaDataProperty>
+        <MetaData>
+          <dateTimeReport>2026-02-23T16:00:00Z</dateTimeReport>
+          <srcRef>
+            <Operation>
+              <name>Avalances.sk</name>
+            </Operation>
+          </srcRef>
+        </MetaData>
+      </metaDataProperty>
+      <validTime>
+        <TimePeriod>
+          <beginPosition>2026-02-23T23:00:00Z</beginPosition>
+          <endPosition>2026-02-24T23:00:00Z</endPosition>
+        </TimePeriod>
+      </validTime>
+      <srcRef>
+        <Operation>
+          <name>Avalanche.report</name>
+        </Operation>
+      </srcRef>
+      <locRef xlink:href="SK-07"/>
+      <locRef xlink:href="SK-05"/>
+      <bulletinResultsOf>
+        <BulletinMeasurements>
+          <dangerRatings>
+            <DangerRating>
+              <validElevation xlink:href="ElevationRange_TreelineHi"/>
+              <mainValue>2</mainValue>
+            </DangerRating>
+            <DangerRating>
+              <validElevation xlink:href="ElevationRange_TreelineLw"/>
+              <mainValue>1</mainValue>
+            </DangerRating>
+          </dangerRatings>
+          <avProblems>
+            <AvProblem>
+              <type>new snow</type>
+              <validAspect xlink:href="AspectRange_w"/>
+              <validAspect xlink:href="AspectRange_e"/>
+              <validAspect xlink:href="AspectRange_nw"/>
+              <validAspect xlink:href="AspectRange_ne"/>
+              <validAspect xlink:href="AspectRange_sw"/>
+              <validAspect xlink:href="AspectRange_n"/>
+              <validAspect xlink:href="AspectRange_s"/>
+              <validAspect xlink:href="AspectRange_se"/>
+              <validElevation xlink:href="ElevationRange_TreelineHi"/>
+            </AvProblem>
+            <AvProblem>
+              <type>old snow</type>
+              <validAspect xlink:href="AspectRange_w"/>
+              <validAspect xlink:href="AspectRange_e"/>
+              <validAspect xlink:href="AspectRange_nw"/>
+              <validAspect xlink:href="AspectRange_ne"/>
+              <validAspect xlink:href="AspectRange_n"/>
+              <validElevation xlink:href="ElevationRange_TreelineHi"/>
+            </AvProblem>
+          </avProblems>
+          <tendency>
+            <type>increasing</type>
+            <validTime>
+              <TimePeriod>
+                <beginPosition>2026-02-24T23:00:00Z</beginPosition>
+                <endPosition>2026-02-25T23:00:00Z</endPosition>
+              </TimePeriod>
+            </validTime>
+          </tendency>
+          <avActivityHighlights>Watch out for snow slabs and pillows on steep slopes!</avActivityHighlights>
+          <avActivityComment>In the Low Tatras and Krivanská Mala Fatra there is a moderate avalanche danger above the forest border, 2nd degree. Around 15 cm of new snow will fall. There are unstable snow pillows and slab snow under the ridges and in the upper parts of the couloirs, which can cause an avalanche on steep slopes when mechanically loaded. Inside the snow cover there is a layer of square-grained snow, which shows the typical warning signals of cracking of the snow cover and rumbling - whoomp sounds. Smaller spontaneous avalanches of new snow may occur on very steep slopes and in rock faces above 1500 m above sea level.</avActivityComment>
+          <snowpackStructureComment>In the northern sector and at the highest altitudes, there are unstable layers of faceted snow in the snow cover. Up to 15 cm of new snow falls, above 1500 m above sea level it is dry, wind-blown and unevenly distributed. The snow cover remains well below average, especially at altitudes below 1500 m.</snowpackStructureComment>
+          <tendencyComment>With snowing, it is increasing. pk</tendencyComment>
+        </BulletinMeasurements>
+      </bulletinResultsOf>
+    </Bulletin>
+    <Bulletin gml:id="d8a4d9c8-ba09-48bd-82f6-6a4c107ea246" xml:lang="en">
+      <metaDataProperty>
+        <MetaData>
+          <dateTimeReport>2026-02-23T16:00:00Z</dateTimeReport>
+          <srcRef>
+            <Operation>
+              <name>Avalances.sk</name>
+            </Operation>
+          </srcRef>
+        </MetaData>
+      </metaDataProperty>
+      <validTime>
+        <TimePeriod>
+          <beginPosition>2026-02-23T23:00:00Z</beginPosition>
+          <endPosition>2026-02-24T23:00:00Z</endPosition>
+        </TimePeriod>
+      </validTime>
+      <srcRef>
+        <Operation>
+          <name>Avalanche.report</name>
+        </Operation>
+      </srcRef>
+      <locRef xlink:href="SK-08"/>
+      <locRef xlink:href="SK-04"/>
+      <locRef xlink:href="SK-06"/>
+      <bulletinResultsOf>
+        <BulletinMeasurements>
+          <dangerRatings>
+            <DangerRating>
+              <validElevation xlink:href="ElevationRange_TreelineHi"/>
+              <mainValue>1</mainValue>
+            </DangerRating>
+            <DangerRating>
+              <validElevation xlink:href="ElevationRange_TreelineLw"/>
+              <mainValue>1</mainValue>
+            </DangerRating>
+          </dangerRatings>
+          <avProblems>
+            <AvProblem>
+              <type>wet snow</type>
+              <validAspect xlink:href="AspectRange_w"/>
+              <validAspect xlink:href="AspectRange_e"/>
+              <validAspect xlink:href="AspectRange_nw"/>
+              <validAspect xlink:href="AspectRange_ne"/>
+              <validAspect xlink:href="AspectRange_sw"/>
+              <validAspect xlink:href="AspectRange_n"/>
+              <validAspect xlink:href="AspectRange_s"/>
+              <validAspect xlink:href="AspectRange_se"/>
+              <validElevation xlink:href="ElevationRange_TreelineHi"/>
+            </AvProblem>
+          </avProblems>
+          <tendency>
+            <type>increasing</type>
+            <validTime>
+              <TimePeriod>
+                <beginPosition>2026-02-24T23:00:00Z</beginPosition>
+                <endPosition>2026-02-25T23:00:00Z</endPosition>
+              </TimePeriod>
+            </validTime>
+          </tendency>
+          <avActivityHighlights>Avalanche release is only possible on isolated, very steep slopes at the highest altitudes.</avActivityHighlights>
+          <avActivityComment>In Lúčanská Mala Fatra, Veľká Fatra and the eastern part of the Low Tatras there is still a small avalanche danger, 1st degree. Up to 10 new snow will fall above the forest border, falling on old hard ground. Smaller avalanches can be released only exceptionally, and only on steep to very steep slopes. Their risk is mainly posed by pushing a person into exposed terrain, possibly in combination with a terrain trap.</avActivityComment>
+          <snowpackStructureComment>The surface of the snow cover is moist to wet due to positive temperatures, gradually hardening as it cools. The total snow cover is well below average, mostly less than 50 cm. In gullies and moguls and on isolated slopes locally even more.</snowpackStructureComment>
+          <tendencyComment>With the snowfall increasing. pk</tendencyComment>
+        </BulletinMeasurements>
+      </bulletinResultsOf>
+    </Bulletin>
+  </observations>
+</ObsCollection>
