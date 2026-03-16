@@ -43,8 +43,7 @@ class SkReportAdapterIT {
             .isEqualTo("sk-laviny");
         assertThat(report.getId().getReportDate()).isEqualTo(report.getReportDate());
 
-        // No binary/PDF report for SK
-        assertThat(fetchResult.getBinaryReport()).isNull();
+        assertThat(fetchResult.getBinaryReport()).isNotNull();
+        assertThat(fetchResult.getBinaryReport().getBytes()).isNotEmpty();
     }
 }
-

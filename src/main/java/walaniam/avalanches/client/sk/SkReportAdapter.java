@@ -5,11 +5,18 @@ import walaniam.avalanches.client.AvalancheReportClient;
 import walaniam.avalanches.client.ReportFetchException;
 import walaniam.avalanches.client.ReportFetchResult;
 import walaniam.avalanches.persistence.AvalancheReport;
+import walaniam.avalanches.persistence.BinaryReport;
 import walaniam.avalanches.persistence.ReportId;
 import walaniam.avalanches.regions.RegionsMapper;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,6 +30,7 @@ import static walaniam.avalanches.common.logging.LoggingUtils.logWarn;
  */
 public class SkReportAdapter implements AvalancheReportClient {
 
+    static final String BINARY_REPORT_URL = "https://static.laviny.sk/bulletins/{DATE}/{DATE}_SK_en.pdf";
     static final String REPORTER = "sk-laviny";
 
     private final SkReportClient skReportClient;
@@ -45,14 +53,64 @@ public class SkReportAdapter implements AvalancheReportClient {
                 allReports.addAll(adapt(bulletin));
             }
 
-            return ReportFetchResult.builder()
-                .reports(allReports)
-                .build();
+            var fetchResultBuilder = ReportFetchResult.builder()
+                .reports(allReports);
+
+            if (!allReports.isEmpty()) {
+                AvalancheReport firstReport = allReports.get(0);
+                String binaryUrl = resolveBinaryReportUrl(firstReport.getReportExpirationDate());
+                try {
+                    var id = ReportId.builder()
+                        .reportedBy(REPORTER)
+                        .regionName(regionsMapper.getRegionName("SK").orElseThrow())
+                        .reportDate(firstReport.getReportDate())
+                        .build();
+                    BinaryReport binaryReport = fetchBinaryReport(executionContext, binaryUrl)
+                        .id(id)
+                        .day(firstReport.getReportExpirationDate().toLocalDate())
+                        .build();
+                    fetchResultBuilder.binaryReport(binaryReport);
+                } catch (Exception e) {
+                    logWarn(executionContext, "Failed to fetch SK binary report", e);
+                }
+            }
+
+            return fetchResultBuilder.build();
 
         } catch (Exception e) {
             logWarn(executionContext, "Failed to fetch SK report", e);
             throw new ReportFetchException("Failed to fetch SK avalanche report", e);
         }
+    }
+
+    private BinaryReport.BinaryReportBuilder fetchBinaryReport(ExecutionContext executionContext, String url) throws Exception {
+        HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(10))
+            .build();
+
+        HttpRequest request = HttpRequest.newBuilder()
+            .GET()
+            .uri(new URI(url))
+            .build();
+
+        logInfo(executionContext, "Fetching binary report from %s", url);
+
+        HttpResponse<byte[]> response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
+
+        logInfo(executionContext, "Response from %s returned status %s", url, response.statusCode());
+
+        if (response.statusCode() / 100 == 2) {
+            return BinaryReport.builder()
+                .bytes(response.body())
+                .contentType("application/pdf");
+        } else {
+            throw new RuntimeException("Got status: " + response.statusCode());
+        }
+    }
+
+    private static String resolveBinaryReportUrl(LocalDateTime reportExpirationDate) {
+        String date = reportExpirationDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        return BINARY_REPORT_URL.replace("{DATE}", date);
     }
 
     List<AvalancheReport> adapt(SkBulletin bulletin) {
