@@ -178,9 +178,10 @@ public class AvalancheReportsFunctionsHandler {
     public HttpResponseMessage getPdfReport(
         @HttpTrigger(
             name = "req", methods = HttpMethod.GET, authLevel = AuthorizationLevel.ANONYMOUS,
-            route = "pdfs/{day}"
+            route = "pdfs/{region}/{day}"
         )
         HttpRequestMessage<String> request,
+        @BindingName("region") String region,
         @BindingName("day") String day,
         ExecutionContext context) {
 

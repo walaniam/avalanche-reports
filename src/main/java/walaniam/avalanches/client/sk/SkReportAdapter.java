@@ -64,7 +64,7 @@ public class SkReportAdapter implements AvalancheReportClient {
                 try {
                     var id = ReportId.builder()
                         .reportedBy(REPORTER)
-                        .regionName(regionsMapper.getRegionName("SK").orElseThrow())
+                        .regionId("SK")
                         .reportDate(firstReport.getReportDate())
                         .build();
                     BinaryReport binaryReport = fetchBinaryReport(executionContext, binaryUrl)
@@ -121,7 +121,7 @@ public class SkReportAdapter implements AvalancheReportClient {
             .map(regionId -> {
                 var id = ReportId.builder()
                     .reportedBy(REPORTER)
-                    .regionName(regionsMapper.getRegionName(regionId).orElse(regionId))
+                    .regionId(regionId)
                     .reportDate(beginDate)
                     .build();
 

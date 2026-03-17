@@ -57,7 +57,7 @@ public class ToprReportClient implements AvalancheReportClient {
 
                 var id = ReportId.builder()
                     .reportedBy(REPORTER)
-                    .regionName(regionsMapper.getRegionName("PL-12").orElse("Tatry"))
+                    .regionId("PL-12")
                     .reportDate(reportDate)
                     .build();
 
