@@ -8,9 +8,9 @@ import walaniam.avalanches.client.api.AvalancheReportClient;
 import walaniam.avalanches.client.api.ReportFetchException;
 import walaniam.avalanches.client.api.ReportFetchResult;
 import walaniam.avalanches.client.pl.ToprReportClient;
+import walaniam.avalanches.client.sk.SkReportAdapter;
 import walaniam.avalanches.mongo.AvalancheReportMongoRepository;
 import walaniam.avalanches.mongo.BinaryReportMongoRepository;
-import walaniam.avalanches.persistence.AvalancheReport;
 import walaniam.avalanches.persistence.AvalancheReportRepository;
 import walaniam.avalanches.persistence.BinaryReport;
 import walaniam.avalanches.persistence.BinaryReportRepository;
@@ -34,7 +34,7 @@ public class AvalancheReportsFunctionsHandler {
 
     private final Function<ExecutionContext, AvalancheReportRepository> reportRepositoryProvider;
     private final Function<ExecutionContext, BinaryReportRepository> binaryReportRepositoryProvider;
-    private final AvalancheReportClient reportClient = new ToprReportClient();
+    private final List<AvalancheReportClient> reportClients = List.of(new ToprReportClient(), new SkReportAdapter());
 
     @SuppressWarnings("unused")
     public AvalancheReportsFunctionsHandler() {
@@ -58,16 +58,17 @@ public class AvalancheReportsFunctionsHandler {
     public void ingestReport(@TimerTrigger(name = "ingestReportTrigger", schedule = DAILY_18_30) String timerInfo,
                              ExecutionContext context) {
         logInfo(context, "ingestReport triggered {}", timerInfo);
-        try {
-            ReportFetchResult fetchResult = reportClient.fetch(context);
-            AvalancheReport report = fetchResult.getReport();
-            AvalancheReportRepository repository = reportRepositoryProvider.apply(context);
-            repository.save(report);
-            Optional.ofNullable(fetchResult.getBinaryReport()).ifPresent(binaryReport ->
-                binaryReportRepositoryProvider.apply(context).upsert(binaryReport)
-            );
-        } catch (ReportFetchException e) {
-            logWarn(context, "Report fetch failed, timer: " + timerInfo, e);
+        AvalancheReportRepository repository = reportRepositoryProvider.apply(context);
+        for (AvalancheReportClient client : reportClients) {
+            try {
+                ReportFetchResult fetchResult = client.fetch(context);
+                fetchResult.getReports().forEach(repository::save);
+                Optional.ofNullable(fetchResult.getBinaryReport()).ifPresent(binaryReport ->
+                    binaryReportRepositoryProvider.apply(context).upsert(binaryReport)
+                );
+            } catch (ReportFetchException e) {
+                logWarn(context, "Report fetch failed for " + client + ", timer: " + timerInfo, e);
+            }
         }
     }
 
@@ -78,20 +79,21 @@ public class AvalancheReportsFunctionsHandler {
         ExecutionContext context
     ) {
         logInfo(context, "ingestReport triggered on demand {}", request);
-        try {
+        for (AvalancheReportClient client : reportClients) {
+            try {
 //            var now = LocalDateTime.now();
-            ReportFetchResult fetchResult = reportClient.fetch(context);
-            AvalancheReport report = fetchResult.getReport();
+                ReportFetchResult fetchResult = client.fetch(context);
 //            report.getId().setReportDate(now);
 //            report.setReportDate(now);
 //            report.setReportExpirationDate(LocalDateTime.now().plusHours(18));
 //            AvalancheReportRepository repository = reportRepositoryProvider.apply(context);
 //            repository.save(report);
-            Optional.ofNullable(fetchResult.getBinaryReport()).ifPresent(binaryReport ->
-                binaryReportRepositoryProvider.apply(context).upsert(binaryReport)
-            );
-        } catch (ReportFetchException e) {
-            logWarn(context, "Report fetch failed", e);
+                Optional.ofNullable(fetchResult.getBinaryReport()).ifPresent(binaryReport ->
+                    binaryReportRepositoryProvider.apply(context).upsert(binaryReport)
+                );
+            } catch (ReportFetchException e) {
+                logWarn(context, "Report fetch failed for " + client, e);
+            }
         }
     }
 

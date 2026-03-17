@@ -48,7 +48,7 @@ class AvalancheReportsFunctionsHandlerIT {
         );
 
         List<BinaryReport> allLatest = binaryRepository.getLatest(10);
-        Assertions.assertEquals(1, allLatest.size());
+        Assertions.assertEquals(2, allLatest.size());
 
         Optional<BinaryReport> todayPdfReport = binaryRepository.findByDay(allLatest.stream().findFirst().get().getDay());
         Assertions.assertTrue(todayPdfReport.isPresent());
