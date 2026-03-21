@@ -7,6 +7,6 @@ import java.util.Optional;
 public interface BinaryReportRepository {
 
     void upsert(BinaryReport document);
-    Optional<BinaryReport> findByDay(LocalDate day);
+    Optional<BinaryReport> find(String region, LocalDate day);
     List<BinaryReport> getLatest(int limit);
 }

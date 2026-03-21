@@ -1,6 +1,7 @@
 package walaniam.avalanches.client.sk;
 
 import com.microsoft.azure.functions.ExecutionContext;
+import org.apache.commons.lang3.StringUtils;
 import walaniam.avalanches.client.api.AvalancheReportClient;
 import walaniam.avalanches.client.api.ReportFetchException;
 import walaniam.avalanches.client.api.ReportFetchResult;
@@ -19,6 +20,8 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static walaniam.avalanches.common.logging.LoggingUtils.logInfo;
 import static walaniam.avalanches.common.logging.LoggingUtils.logWarn;
@@ -35,7 +38,7 @@ public class SkReportAdapter implements AvalancheReportClient {
 
     private final SkReportClient skReportClient;
     private final String binaryReportUrlTemplate;
-    private final RegionsMapper regionsMapper = new RegionsMapper();
+    private final Set<String> regions;
 
     public SkReportAdapter() {
         this(new SkReportClient(), BINARY_REPORT_URL);
@@ -44,6 +47,14 @@ public class SkReportAdapter implements AvalancheReportClient {
     SkReportAdapter(SkReportClient skReportClient, String binaryReportUrlTemplate) {
         this.skReportClient = skReportClient;
         this.binaryReportUrlTemplate = binaryReportUrlTemplate;
+        this.regions = new RegionsMapper().getAllIds().stream()
+            .filter(id -> StringUtils.startsWithIgnoreCase(id, "SK"))
+            .collect(Collectors.toUnmodifiableSet());
+    }
+
+    @Override
+    public Set<String> getSupportedRegions() {
+        return regions;
     }
 
     @Override

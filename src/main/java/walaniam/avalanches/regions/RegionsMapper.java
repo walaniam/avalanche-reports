@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Log
 public class RegionsMapper {
@@ -45,6 +46,10 @@ public class RegionsMapper {
      */
     public Optional<String> getRegionName(String regionId) {
         return Optional.ofNullable(regionsById.get(regionId));
+    }
+
+    public Set<String> getAllIds() {
+        return regionsById.keySet();
     }
 
     int getRegionsCount() {

@@ -1,4 +1,4 @@
-package walaniam.avalanches;
+package walaniam.avalanches.function;
 
 import com.microsoft.azure.functions.ExecutionContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -7,15 +7,18 @@ import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
-import walaniam.avalanches.function.AvalancheReportsFunctionsHandler;
+import walaniam.avalanches.client.api.AvalancheReportClient;
 import walaniam.avalanches.mongo.AvalancheReportMongoRepository;
 import walaniam.avalanches.mongo.BinaryReportMongoRepository;
 import walaniam.avalanches.persistence.AvalancheReport;
 import walaniam.avalanches.persistence.BinaryReport;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
@@ -76,7 +79,29 @@ class AvalancheReportsFunctionsHandlerIT {
             assertThat(binaryReport.getBytes()).isNotEmpty();
         });
 
-        Optional<BinaryReport> todayPdfReport = binaryRepository.findByDay(allLatest.get(0).getDay());
-        assertThat(todayPdfReport).isPresent();
+        Set<String> regions = underTest.getReportClients().stream()
+            .map(AvalancheReportClient::getSupportedRegions)
+            .flatMap(Collection::stream)
+            .collect(Collectors.toSet());
+
+        assertThat(regions).isNotEmpty();
+
+        List<BinaryReport> binaryReports = regions.stream()
+            .map(region -> binaryRepository.find(region, allLatest.get(0).getDay()))
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .toList();
+
+        assertThat(binaryReports).hasSize(2);
+
+        assertThat(binaryReports).allSatisfy(report -> {
+            assertThat(report.getId()).isNotNull();
+            assertThat(report.getId().getReportedBy()).isNotBlank();
+            assertThat(report.getId().getReportDate()).isNotNull();
+            assertThat(report.getDay()).isNotNull();
+            assertThat(report.getContentType()).isEqualTo("application/pdf");
+            assertThat(report.getBytes()).isNotEmpty();
+        });
+
     }
 }

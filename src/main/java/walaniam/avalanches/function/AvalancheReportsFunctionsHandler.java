@@ -3,6 +3,8 @@ package walaniam.avalanches.function;
 import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.*;
 import com.mongodb.MongoException;
+import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import walaniam.avalanches.client.api.AvalancheReportClient;
 import walaniam.avalanches.client.api.ReportFetchException;
@@ -34,6 +36,7 @@ public class AvalancheReportsFunctionsHandler {
 
     private final Function<ExecutionContext, AvalancheReportRepository> reportRepositoryProvider;
     private final Function<ExecutionContext, BinaryReportRepository> binaryReportRepositoryProvider;
+    @Getter(AccessLevel.PACKAGE)
     private final List<AvalancheReportClient> reportClients = List.of(new ToprReportClient(), new SkReportAdapter());
 
     @SuppressWarnings("unused")
@@ -187,11 +190,11 @@ public class AvalancheReportsFunctionsHandler {
 
         LocalDate localDate = LocalDate.parse(day);
 
-        logInfo(context, "Getting PDF report from day: %s", localDate);
+        logInfo(context, "Getting PDF report, region: %s, day: %s", region, localDate);
 
         BinaryReportRepository repository = binaryReportRepositoryProvider.apply(context);
         try {
-            BinaryReport pdfReport = repository.findByDay(localDate).orElseThrow();
+            BinaryReport pdfReport = repository.find(region, localDate).orElseThrow();
             HttpResponseMessage.Builder responseBuilder = responseBuilderOf(
                 request, HttpStatus.OK, Optional.of(pdfReport.getBytes()));
             responseBuilder.header("Content-Type", pdfReport.getContentType());
@@ -202,6 +205,24 @@ public class AvalancheReportsFunctionsHandler {
             logWarn(context, "read failed", e);
             return responseOf(request, HttpStatus.INTERNAL_SERVER_ERROR, Optional.of(String.valueOf(e)));
         }
+    }
+
+    @FunctionName("regions")
+    public HttpResponseMessage getRegions(
+        @HttpTrigger(name = "req", methods = HttpMethod.GET, authLevel = AuthorizationLevel.ANONYMOUS)
+        HttpRequestMessage<String> request,
+        ExecutionContext context) {
+
+        logInfo(context, "Getting supported regions");
+
+        List<String> regions = reportClients.stream()
+            .flatMap(client -> client.getSupportedRegions().stream())
+            .sorted()
+            .toList();
+
+        HttpResponseMessage.Builder responseBuilder = responseBuilderOf(request, HttpStatus.OK, Optional.of(regions));
+        responseBuilder.header("Content-Type", "application/json");
+        return responseBuilder.build();
     }
 
     private static <T> HttpResponseMessage.Builder responseBuilderOf(HttpRequestMessage<String> request,

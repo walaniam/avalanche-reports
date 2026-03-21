@@ -13,7 +13,6 @@ import walaniam.avalanches.common.time.DateTimeUtils;
 import walaniam.avalanches.persistence.AvalancheReport;
 import walaniam.avalanches.persistence.BinaryReport;
 import walaniam.avalanches.persistence.ReportId;
-import walaniam.avalanches.regions.RegionsMapper;
 
 import java.io.IOException;
 import java.net.URI;
@@ -33,10 +32,16 @@ import static walaniam.avalanches.common.logging.LoggingUtils.logWarn;
 
 public class ToprReportClient implements AvalancheReportClient {
 
+    private static final String REGION = "PL-12";
     private static final String REPORTER = "topr";
+
     private final String reportUrl = "https://lawiny.topr.pl/";
     private final String pdfReportUrl = "https://lawiny.topr.pl/viewpdf";
-    private final RegionsMapper regionsMapper = new RegionsMapper();
+
+    @Override
+    public Set<String> getSupportedRegions() {
+        return Set.of(REGION);
+    }
 
     @Override
     public ReportFetchResult fetch(ExecutionContext executionContext) throws ReportFetchException {
@@ -57,7 +62,7 @@ public class ToprReportClient implements AvalancheReportClient {
 
                 var id = ReportId.builder()
                     .reportedBy(REPORTER)
-                    .regionId("PL-12")
+                    .regionId(REGION)
                     .reportDate(reportDate)
                     .build();
 

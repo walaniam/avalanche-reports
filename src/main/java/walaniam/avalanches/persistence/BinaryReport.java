@@ -13,7 +13,7 @@ public class BinaryReport {
     @ToString.Include
     private ReportId id;
     private byte[] bytes;
-    @ToString.Include
     private String contentType;
+    @ToString.Include
     private LocalDate day;
 }

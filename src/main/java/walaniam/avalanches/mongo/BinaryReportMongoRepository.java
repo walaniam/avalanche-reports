@@ -71,9 +71,9 @@ public class BinaryReportMongoRepository implements BinaryReportRepository {
     }
 
     @Override
-    public Optional<BinaryReport> findByDay(LocalDate day) {
+    public Optional<BinaryReport> find(String region, LocalDate day) {
         return mongoExecutor.executeWithResult(collection -> {
-            Bson filter = Filters.eq("day", day);
+            Bson filter = Filters.and(Filters.eq("_id.regionId", region), Filters.eq("day", day));
             logInfo(context, "find pdf report by filter=%s", filter);
             FindIterable<BinaryReport> documents = collection.find(filter);
             BinaryReport binaryReport = documents.first();
