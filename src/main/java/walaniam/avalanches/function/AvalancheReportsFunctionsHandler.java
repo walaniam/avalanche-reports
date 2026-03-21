@@ -89,12 +89,12 @@ public class AvalancheReportsFunctionsHandler {
 //            report.getId().setReportDate(now);
 //            report.setReportDate(now);
 //            report.setReportExpirationDate(LocalDateTime.now().plusHours(18));
-//            AvalancheReportRepository repository = reportRepositoryProvider.apply(context);
-//            repository.save(report);
+                AvalancheReportRepository repository = reportRepositoryProvider.apply(context);
+                fetchResult.getReports().forEach(repository::save);
                 Optional.ofNullable(fetchResult.getBinaryReport()).ifPresent(binaryReport ->
                     binaryReportRepositoryProvider.apply(context).upsert(binaryReport)
                 );
-            } catch (ReportFetchException e) {
+            } catch (Exception e) {
                 logWarn(context, "Report fetch failed for " + client, e);
             }
         }

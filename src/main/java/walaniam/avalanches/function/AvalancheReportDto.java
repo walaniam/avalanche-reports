@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class AvalancheReportDto {
 
+    private Region region;
     private int avalancheLevel;
     private String reportedBy;
     private String reportDate;
