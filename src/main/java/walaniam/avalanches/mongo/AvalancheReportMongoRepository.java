@@ -1,19 +1,20 @@
 package walaniam.avalanches.mongo;
 
 import com.microsoft.azure.functions.ExecutionContext;
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.Indexes;
 import com.mongodb.client.model.Sorts;
 import com.mongodb.client.result.InsertOneResult;
 import org.bson.BsonString;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import walaniam.avalanches.persistence.AvalancheReport;
 import walaniam.avalanches.persistence.AvalancheReportRepository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
+import java.time.LocalDate;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static walaniam.avalanches.common.logging.LoggingUtils.logInfo;
@@ -104,5 +105,21 @@ public class AvalancheReportMongoRepository implements AvalancheReportRepository
             .skip(skip)
             .limit(limit)
             .into(new ArrayList<>()));
+    }
+
+    @Override
+    public Optional<AvalancheReport> find(String region, LocalDate day) {
+        return mongoExecutor.executeWithResult(collection -> {
+            Bson filter = Filters.and(
+                Filters.eq("_id.regionId", region),
+                Filters.gte("reportExpirationDate", day.atStartOfDay()),
+                Filters.lt("reportExpirationDate", day.plusDays(1).atStartOfDay())
+            );
+            logInfo(context, "find report by filter=%s", filter);
+            FindIterable<AvalancheReport> documents = collection.find(filter);
+            AvalancheReport report = documents.first();
+            logInfo(context, "Found report: %s", report);
+            return Optional.ofNullable(report);
+        });
     }
 }

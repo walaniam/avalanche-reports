@@ -1,6 +1,8 @@
 package walaniam.avalanches.persistence;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface AvalancheReportRepository {
 
@@ -11,4 +13,6 @@ public interface AvalancheReportRepository {
     default List<AvalancheReport> getLatest() {
         return getLatest(0, 10);
     }
+
+    Optional<AvalancheReport> find(String region, LocalDate day);
 }

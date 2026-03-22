@@ -154,17 +154,25 @@ public class AvalancheReportsFunctionsHandler {
 
     @FunctionName("report")
     public HttpResponseMessage getSingleLatest(
-        @HttpTrigger(name = "req", methods = HttpMethod.GET, authLevel = AuthorizationLevel.ANONYMOUS)
+        @HttpTrigger(
+            name = "req",
+            methods = HttpMethod.GET,
+            authLevel = AuthorizationLevel.ANONYMOUS,
+            route = "report/{region}/{day}"
+        )
         HttpRequestMessage<String> request,
+        @BindingName("region") String region,
+        @BindingName("day") String day,
         ExecutionContext context) {
 
-        logInfo(context, "Getting latest single report");
+        LocalDate localDate = LocalDate.parse(day);
+
+        logInfo(context, "Getting report, region: %s, day: %s", region, localDate);
 
         AvalancheReportRepository repository = reportRepositoryProvider.apply(context);
         try {
-            AvalancheReportDto latest = repository.getLatest(0, 1).stream()
+            AvalancheReportDto latest = repository.find(region, localDate)
                 .map(AvalancheReportMapper.INSTANCE::toDataView)
-                .findFirst()
                 .orElseThrow();
             HttpResponseMessage.Builder responseBuilder = responseBuilderOf(request, HttpStatus.OK, Optional.of(latest));
             responseBuilder.header("Content-Type", "application/json");
@@ -180,7 +188,8 @@ public class AvalancheReportsFunctionsHandler {
     @FunctionName("pdfReport")
     public HttpResponseMessage getPdfReport(
         @HttpTrigger(
-            name = "req", methods = HttpMethod.GET, authLevel = AuthorizationLevel.ANONYMOUS,
+            name = "req", methods = HttpMethod.GET,
+            authLevel = AuthorizationLevel.ANONYMOUS,
             route = "pdfs/{region}/{day}"
         )
         HttpRequestMessage<String> request,

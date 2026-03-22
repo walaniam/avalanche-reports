@@ -77,7 +77,7 @@ public class BinaryReportMongoRepository implements BinaryReportRepository {
             logInfo(context, "find pdf report by filter=%s", filter);
             FindIterable<BinaryReport> documents = collection.find(filter);
             BinaryReport binaryReport = documents.first();
-            logInfo(context, "Found report: %s", binaryReport);
+            logInfo(context, "Found binary report: %s", binaryReport);
             return Optional.ofNullable(binaryReport);
         });
     }

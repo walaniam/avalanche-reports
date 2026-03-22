@@ -13,6 +13,7 @@ import walaniam.avalanches.mongo.BinaryReportMongoRepository;
 import walaniam.avalanches.persistence.AvalancheReport;
 import walaniam.avalanches.persistence.BinaryReport;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -64,6 +65,20 @@ class AvalancheReportsFunctionsHandlerIT {
             assertThat(report.getReportExpirationDate()).isNotNull();
             assertThat(report.getComment()).isNotBlank();
         });
+
+        // Assert find by region and day returns correct reports
+        reports.forEach(report -> {
+            String regionId = report.getId().getRegionId();
+            LocalDate day = report.getReportExpirationDate().toLocalDate();
+            Optional<AvalancheReport> found = reportRepository.find(regionId, day);
+            assertThat(found).isPresent();
+            assertThat(found.get().getId().getRegionId()).isEqualTo(regionId);
+            assertThat(found.get().getReportExpirationDate().toLocalDate()).isEqualTo(day);
+        });
+
+        // Assert find with non-existing region returns empty
+        Optional<AvalancheReport> notFound = reportRepository.find("NON_EXISTING_REGION", LocalDate.now());
+        assertThat(notFound).isEmpty();
 
         // Assert BinaryReport documents were stored
         var binaryRepository = new BinaryReportMongoRepository(
