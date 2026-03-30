@@ -5,6 +5,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 import org.mapstruct.factory.Mappers;
 import walaniam.avalanches.persistence.AvalancheReport;
+import walaniam.avalanches.regions.Region;
 import walaniam.avalanches.regions.RegionsMapper;
 
 @Mapper

@@ -12,6 +12,7 @@ import walaniam.avalanches.mongo.AvalancheReportMongoRepository;
 import walaniam.avalanches.mongo.BinaryReportMongoRepository;
 import walaniam.avalanches.persistence.AvalancheReport;
 import walaniam.avalanches.persistence.BinaryReport;
+import walaniam.avalanches.regions.Region;
 
 import java.time.LocalDate;
 import java.util.Collection;
@@ -94,7 +95,7 @@ class AvalancheReportsFunctionsHandlerIT {
             assertThat(binaryReport.getBytes()).isNotEmpty();
         });
 
-        Set<String> regions = underTest.getReportClients().stream()
+        Set<Region> regions = underTest.getReportClients().stream()
             .map(AvalancheReportClient::getSupportedRegions)
             .flatMap(Collection::stream)
             .collect(Collectors.toSet());
@@ -102,7 +103,7 @@ class AvalancheReportsFunctionsHandlerIT {
         assertThat(regions).isNotEmpty();
 
         List<BinaryReport> binaryReports = regions.stream()
-            .map(region -> binaryRepository.find(region, allLatest.get(0).getDay()))
+            .map(region -> binaryRepository.find(region.getId(), allLatest.get(0).getDay()))
             .filter(Optional::isPresent)
             .map(Optional::get)
             .toList();

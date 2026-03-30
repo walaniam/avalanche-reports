@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Log
 public class RegionsMapper {
@@ -48,8 +49,10 @@ public class RegionsMapper {
         return Optional.ofNullable(regionsById.get(regionId));
     }
 
-    public Set<String> getAllIds() {
-        return regionsById.keySet();
+    public Set<Region> getAll() {
+        return regionsById.entrySet().stream()
+            .map(it -> new Region(it.getKey(), it.getValue()))
+            .collect(Collectors.toSet());
     }
 
     int getRegionsCount() {

@@ -16,6 +16,7 @@ import walaniam.avalanches.mongo.BinaryReportMongoRepository;
 import walaniam.avalanches.persistence.AvalancheReportRepository;
 import walaniam.avalanches.persistence.BinaryReport;
 import walaniam.avalanches.persistence.BinaryReportRepository;
+import walaniam.avalanches.regions.Region;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -224,7 +225,7 @@ public class AvalancheReportsFunctionsHandler {
 
         logInfo(context, "Getting supported regions");
 
-        List<String> regions = reportClients.stream()
+        List<Region> regions = reportClients.stream()
             .flatMap(client -> client.getSupportedRegions().stream())
             .sorted()
             .toList();

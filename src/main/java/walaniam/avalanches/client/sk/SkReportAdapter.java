@@ -8,6 +8,7 @@ import walaniam.avalanches.client.api.ReportFetchResult;
 import walaniam.avalanches.persistence.AvalancheReport;
 import walaniam.avalanches.persistence.BinaryReport;
 import walaniam.avalanches.persistence.ReportId;
+import walaniam.avalanches.regions.Region;
 import walaniam.avalanches.regions.RegionsMapper;
 
 import java.net.URI;
@@ -38,7 +39,7 @@ public class SkReportAdapter implements AvalancheReportClient {
 
     private final SkReportClient skReportClient;
     private final String binaryReportUrlTemplate;
-    private final Set<String> regions;
+    private final Set<Region> regions;
 
     public SkReportAdapter() {
         this(new SkReportClient(), BINARY_REPORT_URL);
@@ -47,13 +48,13 @@ public class SkReportAdapter implements AvalancheReportClient {
     SkReportAdapter(SkReportClient skReportClient, String binaryReportUrlTemplate) {
         this.skReportClient = skReportClient;
         this.binaryReportUrlTemplate = binaryReportUrlTemplate;
-        this.regions = new RegionsMapper().getAllIds().stream()
-            .filter(id -> StringUtils.startsWithIgnoreCase(id, "SK"))
+        this.regions = new RegionsMapper().getAll().stream()
+            .filter(region -> StringUtils.startsWithIgnoreCase(region.getId(), "SK"))
             .collect(Collectors.toUnmodifiableSet());
     }
 
     @Override
-    public Set<String> getSupportedRegions() {
+    public Set<Region> getSupportedRegions() {
         return regions;
     }
 

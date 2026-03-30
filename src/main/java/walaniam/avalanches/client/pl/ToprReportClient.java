@@ -13,6 +13,7 @@ import walaniam.avalanches.common.time.DateTimeUtils;
 import walaniam.avalanches.persistence.AvalancheReport;
 import walaniam.avalanches.persistence.BinaryReport;
 import walaniam.avalanches.persistence.ReportId;
+import walaniam.avalanches.regions.Region;
 
 import java.io.IOException;
 import java.net.URI;
@@ -39,8 +40,8 @@ public class ToprReportClient implements AvalancheReportClient {
     private final String pdfReportUrl = "https://lawiny.topr.pl/viewpdf";
 
     @Override
-    public Set<String> getSupportedRegions() {
-        return Set.of(REGION);
+    public Set<Region> getSupportedRegions() {
+        return Set.of(Region.builder().id(REGION).name("Tatry").build());
     }
 
     @Override
