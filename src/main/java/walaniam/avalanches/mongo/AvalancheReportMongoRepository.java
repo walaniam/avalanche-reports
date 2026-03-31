@@ -108,6 +108,20 @@ public class AvalancheReportMongoRepository implements AvalancheReportRepository
     }
 
     @Override
+    public List<AvalancheReport> getLatest(String region, int skip, int limit) {
+        logInfo(context, "Getting %s latest reports for region %s", limit, region);
+        if (limit < 0 || limit > 1000) {
+            throw new IllegalArgumentException("Limit must be in <0, 1000>");
+        }
+        return mongoExecutor.executeWithResult(collection -> collection
+            .find(Filters.eq("_id.regionId", region), AvalancheReport.class)
+            .sort(Sorts.descending("expirationDate"))
+            .skip(skip)
+            .limit(limit)
+            .into(new ArrayList<>()));
+    }
+
+    @Override
     public Optional<AvalancheReport> find(String region, LocalDate day) {
         return mongoExecutor.executeWithResult(collection -> {
             Bson filter = Filters.and(

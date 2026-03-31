@@ -68,6 +68,13 @@
 
     <div id="currentDate"></div>
 
+    <div id="regionSelector" style="text-align: center; margin-bottom: 15px;">
+        <label for="regionSelect" style="font-size: 14px; margin-right: 8px;">Region:</label>
+        <select id="regionSelect" style="padding: 6px 10px; font-size: 14px; border-radius: 4px; border: 1px solid #ccc;">
+            <option value="">Loading regions...</option>
+        </select>
+    </div>
+
     <canvas id="avalancheChart"></canvas>
 
     <div id="navigation">
@@ -94,12 +101,36 @@
 </div>
 
 <script>
-    const FULL_REPORT_URL = "pdfs/{day}";
+    const FULL_REPORT_URL = "pdfs/{region}/{day}";
+    const REGIONS_URL = "regions";
     const API_URL = "reports";
+    const DEFAULT_REGION = "PL-12";
     let currentPage = 0;
+    let currentRegion = DEFAULT_REGION;
     const pageSize = 20; // default size
 
     let currentChartInstance = null; // To keep track of the Chart instance
+
+    async function loadRegions() {
+      try {
+        const response = await fetch(REGIONS_URL);
+        const regions = await response.json();
+        const select = document.getElementById('regionSelect');
+        select.innerHTML = '';
+        regions.forEach(r => {
+          const option = document.createElement('option');
+          option.value = r.id;
+          option.textContent = `${r.name} (${r.id})`;
+          if (r.id === DEFAULT_REGION) {
+            option.selected = true;
+          }
+          select.appendChild(option);
+        });
+        currentRegion = select.value || DEFAULT_REGION;
+      } catch (err) {
+        console.error('Failed to load regions', err);
+      }
+    }
 
     function updateButtons() {
       const prevBtn = document.getElementById('prevPage');
@@ -128,7 +159,7 @@
 
     async function loadReports(page = 0) {
       try {
-        const response = await fetch(`${API_URL}?size=${pageSize}&page=${page}`);
+        const response = await fetch(`${API_URL}?size=${pageSize}&page=${page}&region=${encodeURIComponent(currentRegion)}`);
         const data = await response.json();
 
         // sort by date ascending
@@ -211,9 +242,12 @@
       document.getElementById("commentMeta").textContent =
         `Reported by ${report.reportedBy}, at ${report.reportDate}, valid until ${report.reportExpirationDate}`;
 
-      // Generate report URL with formatted date
+      // Generate report URL with formatted date and region
       const reportDateStr = formatDate(report.reportExpirationDate);
-      const reportUrl = FULL_REPORT_URL.replace("{day}", reportDateStr);
+      const regionId = report.region ? report.region.id : currentRegion;
+      const reportUrl = FULL_REPORT_URL
+        .replace("{region}", encodeURIComponent(regionId))
+        .replace("{day}", reportDateStr);
 
       // Create link element
       fullReportDiv.innerHTML = `<a href="${reportUrl}" target="_blank">PDF Report</a>`;
@@ -235,6 +269,14 @@
       loadReports(currentPage - 1); // newer data
     });
 
+    // Region selector handler
+    document.getElementById('regionSelect').addEventListener('change', (e) => {
+      currentRegion = e.target.value;
+      currentPage = 0;
+      document.getElementById("commentBox").style.display = "none";
+      loadReports(0);
+    });
+
     // Assuming this is within the script tags in your HTML or a linked JS file
     function displayCurrentDate() {
       const dateElement = document.getElementById("currentDate");
@@ -244,8 +286,9 @@
     }
 
     // Initialize
-    window.onload = () => {
+    window.onload = async () => {
       displayCurrentDate();
+      await loadRegions();
       updateButtons();
       loadReports(0);
     };

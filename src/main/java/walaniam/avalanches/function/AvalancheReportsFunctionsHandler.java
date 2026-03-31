@@ -13,6 +13,7 @@ import walaniam.avalanches.client.pl.ToprReportClient;
 import walaniam.avalanches.client.sk.SkReportAdapter;
 import walaniam.avalanches.mongo.AvalancheReportMongoRepository;
 import walaniam.avalanches.mongo.BinaryReportMongoRepository;
+import walaniam.avalanches.persistence.AvalancheReport;
 import walaniam.avalanches.persistence.AvalancheReportRepository;
 import walaniam.avalanches.persistence.BinaryReport;
 import walaniam.avalanches.persistence.BinaryReportRepository;
@@ -111,11 +112,15 @@ public class AvalancheReportsFunctionsHandler {
 
         int page = Integer.parseInt(request.getQueryParameters().getOrDefault("page", "0"));
         int size = Integer.parseInt(request.getQueryParameters().getOrDefault("size", "20"));
+        String region = request.getQueryParameters().get("region");
         int skip = page * size;
 
         AvalancheReportRepository repository = reportRepositoryProvider.apply(context);
         try {
-            List<AvalancheReportDto> latest = repository.getLatest(skip, size).stream()
+            List<AvalancheReport> reports = region != null
+                ? repository.getLatest(region, skip, size)
+                : repository.getLatest(skip, size);
+            List<AvalancheReportDto> latest = reports.stream()
                 .map(AvalancheReportMapper.INSTANCE::toDataView)
                 .toList();
             HttpResponseMessage.Builder responseBuilder = responseBuilderOf(request, HttpStatus.OK, Optional.of(latest));
@@ -159,7 +164,7 @@ public class AvalancheReportsFunctionsHandler {
             name = "req",
             methods = HttpMethod.GET,
             authLevel = AuthorizationLevel.ANONYMOUS,
-            route = "report/{region}/{day}"
+            route = "reports/{region}/{day}"
         )
         HttpRequestMessage<String> request,
         @BindingName("region") String region,
