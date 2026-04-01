@@ -207,9 +207,11 @@ public class AvalancheReportsFunctionsHandler {
 
         logInfo(context, "Getting PDF report, region: %s, day: %s", region, localDate);
 
+        String resolvedRegion = resolvePdfRegion(region);
+
         BinaryReportRepository repository = binaryReportRepositoryProvider.apply(context);
         try {
-            BinaryReport pdfReport = repository.find(region, localDate).orElseThrow();
+            BinaryReport pdfReport = repository.find(resolvedRegion, localDate).orElseThrow();
             HttpResponseMessage.Builder responseBuilder = responseBuilderOf(
                 request, HttpStatus.OK, Optional.of(pdfReport.getBytes()));
             responseBuilder.header("Content-Type", pdfReport.getContentType());
@@ -252,5 +254,15 @@ public class AvalancheReportsFunctionsHandler {
                                                       HttpStatus status,
                                                       Optional<T> message) {
         return responseBuilderOf(request, status, message).build();
+    }
+
+    /**
+     * SK sub-regions (SK-01, SK-02, etc.) share a single PDF stored under regionId "SK".
+     */
+    static String resolvePdfRegion(String region) {
+        if (region != null && region.startsWith("SK-")) {
+            return "SK";
+        }
+        return region;
     }
 }
