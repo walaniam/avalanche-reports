@@ -49,7 +49,7 @@ public class SkReportAdapter implements AvalancheReportClient {
         this.skReportClient = skReportClient;
         this.binaryReportUrlTemplate = binaryReportUrlTemplate;
         this.regions = new RegionsMapper().getAll().stream()
-            .filter(region -> StringUtils.startsWithIgnoreCase(region.getId(), "SK"))
+            .filter(region -> StringUtils.startsWithIgnoreCase(region.getId(), "SK-"))
             .collect(Collectors.toUnmodifiableSet());
     }
 
