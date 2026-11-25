@@ -34,7 +34,14 @@ public class AvalancheReportsFunctionsHandler {
 
     private final Function<ExecutionContext, AvalancheReportRepository> reportRepositoryProvider;
     private final Function<ExecutionContext, BinaryReportRepository> binaryReportRepositoryProvider;
-    private final AvalancheReportClient reportClient = new ToprReportClient();
+    private final AvalancheReportClient reportClient;
+
+    public AvalancheReportsFunctionsHandler(
+        Function<ExecutionContext, AvalancheReportRepository> reportRepositoryProvider,
+        Function<ExecutionContext, BinaryReportRepository> binaryReportRepositoryProvider
+    ) {
+        this(reportRepositoryProvider, binaryReportRepositoryProvider, new ToprReportClient());
+    }
 
     @SuppressWarnings("unused")
     public AvalancheReportsFunctionsHandler() {
@@ -82,14 +89,10 @@ public class AvalancheReportsFunctionsHandler {
     ) {
         logInfo(context, "ingestReport triggered on demand {}", request);
         try {
-//            var now = LocalDateTime.now();
             ReportFetchResult fetchResult = reportClient.fetch(context);
             AvalancheReport report = fetchResult.getReport();
-//            report.getId().setReportDate(now);
-//            report.setReportDate(now);
-//            report.setReportExpirationDate(LocalDateTime.now().plusHours(18));
-//            AvalancheReportRepository repository = reportRepositoryProvider.apply(context);
-//            repository.save(report);
+            AvalancheReportRepository repository = reportRepositoryProvider.apply(context);
+            repository.save(report);
             Optional.ofNullable(fetchResult.getBinaryReport()).ifPresent(binaryReport ->
                 binaryReportRepositoryProvider.apply(context).upsert(binaryReport)
             );
