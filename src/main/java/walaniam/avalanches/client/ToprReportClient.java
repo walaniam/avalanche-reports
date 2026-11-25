@@ -3,7 +3,6 @@ package walaniam.avalanches.client;
 import com.microsoft.azure.functions.ExecutionContext;
 import lombok.ToString;
 import org.htmlunit.WebClient;
-import org.htmlunit.html.DomElement;
 import org.htmlunit.html.HtmlElement;
 import org.htmlunit.html.HtmlPage;
 import walaniam.avalanches.common.time.DateTimeUtils;
@@ -21,8 +20,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 import static walaniam.avalanches.common.logging.LoggingUtils.logInfo;
 import static walaniam.avalanches.common.logging.LoggingUtils.logWarn;
@@ -31,7 +29,6 @@ public class ToprReportClient implements AvalancheReportClient {
 
     private static final String REPORTER = "topr";
     private final String reportUrl = "https://lawiny.topr.pl/";
-    private final String pdfReportUrl = "https://lawiny.topr.pl/viewpdf";
 
     @Override
     public ReportFetchResult fetch(ExecutionContext executionContext) throws ReportFetchException {
@@ -42,7 +39,7 @@ public class ToprReportClient implements AvalancheReportClient {
 
             try (WebClient webClient = new WebClient()) {
                 webClient.getOptions().setCssEnabled(false);
-                webClient.getOptions().setJavaScriptEnabled(true);
+                webClient.getOptions().setJavaScriptEnabled(false);
 
                 HtmlPage page = webClient.getPage(reportUrl);
 
@@ -68,7 +65,7 @@ public class ToprReportClient implements AvalancheReportClient {
                     .report(avalancheReport);
 
                 try {
-                    BinaryReport binaryReport = fetchBinaryReport(executionContext)
+                    BinaryReport binaryReport = fetchBinaryReport(executionContext, pageWrapper.getPdfReportUrl())
                         .id(id)
                         .day(avalancheReport.getReportExpirationDate().toLocalDate())
                         .build();
@@ -89,7 +86,7 @@ public class ToprReportClient implements AvalancheReportClient {
         throw new ReportFetchException("Fetch failed after attempts: " + errors, lastException);
     }
 
-    private BinaryReport.BinaryReportBuilder fetchBinaryReport(ExecutionContext executionContext) throws Exception {
+    private BinaryReport.BinaryReportBuilder fetchBinaryReport(ExecutionContext executionContext, URI pdfReportUrl) throws Exception {
 
         HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
@@ -97,7 +94,7 @@ public class ToprReportClient implements AvalancheReportClient {
 
         HttpRequest request = HttpRequest.newBuilder()
             .GET()
-            .uri(new URI(pdfReportUrl))
+            .uri(pdfReportUrl)
             .build();
 
         logInfo(executionContext, "Fetching binary report from %s", pdfReportUrl);
@@ -122,56 +119,78 @@ public class ToprReportClient implements AvalancheReportClient {
     }
 
     @ToString
-    private static class PageWrapper {
-
-        private static final Set<String> KNOWN_LEVELS = Set.of("1", "2", "3", "4", "5");
+    static class PageWrapper {
 
         private final HtmlPage page;
-        private final HtmlElement pageElement;
 
         public PageWrapper(HtmlPage page) {
             this.page = page;
-            this.pageElement = page.getDocumentElement();
         }
 
         public int getAvalancheLevel() {
-            String level = findSingleElementsByClassName(pageElement, "span", "law-mst-lev")
-                .getTextContent()
-                .trim();
-            if (!KNOWN_LEVELS.contains(level)) {
-                throw new IllegalArgumentException("Unknown level: " + level);
+            List<HtmlElement> levels = page.getByXPath("//*[contains(concat(' ', normalize-space(@class), ' '), ' topr-mobile-region-level ')]");
+            if (levels.isEmpty()) {
+                throw new IllegalArgumentException("No avalanche levels found");
             }
-            return Integer.parseInt(level);
+            return levels.stream().mapToInt(element -> {
+                String level = element.getTextContent().trim();
+                if (!level.matches("[1-5]\\s*[-–].+")) {
+                    throw new IllegalArgumentException("Unknown level: " + level);
+                }
+                return level.charAt(0) - '0';
+            }).max().orElseThrow();
         }
 
         public String getReportDate() {
-            return findSingleElementsByClassName(pageElement, "div", "law-mst-iat")
-                .getTextContent()
-                .trim();
+            return getDate("Data publikacji");
         }
 
         public String getReportExpirationDate() {
-            return findSingleElementsByClassName(pageElement, "div", "law-mst-exp")
-                .getTextContent()
-                .trim();
+            return getDate("Obowiązuje do");
         }
 
         public String getComment() {
-            return Optional.ofNullable(page.getElementById("law-comment"))
-                .map(DomElement::getTextContent)
-                .map(String::trim)
-                .orElseThrow();
+            List<HtmlElement> articles = page.getByXPath("//article[contains(concat(' ', normalize-space(@class), ' '), ' topr-bulletin ')]");
+            if (articles.isEmpty()) {
+                throw new IllegalArgumentException("No avalanche bulletins found");
+            }
+            return articles.stream().map(article -> {
+                HtmlElement comment = article.querySelector(".avalanche-comment");
+                if (comment == null) {
+                    throw new IllegalArgumentException("No avalanche comment found");
+                }
+                List<HtmlElement> paragraphs = comment.getElementsByTagName("p");
+                String text = paragraphs.stream().map(HtmlElement::getTextContent)
+                    .map(String::trim).collect(Collectors.joining("\n"));
+                if (text.isBlank()) {
+                    throw new IllegalArgumentException("Empty avalanche comment");
+                }
+                if (articles.size() == 1) {
+                    return text;
+                }
+                HtmlElement region = article.querySelector(".topr-mobile-detail-meta > div > strong");
+                if (region == null) {
+                    throw new IllegalArgumentException("No bulletin region found");
+                }
+                return region.getTextContent().trim() + ": " + text;
+            }).collect(Collectors.joining("\n\n"));
         }
 
-        private static HtmlElement findSingleElementsByClassName(HtmlElement element, String tagName, String className) {
-            List<HtmlElement> elements = element.getElementsByTagName(tagName)
-                .stream()
-                .filter(it -> it.hasAttribute("class") && className.equals(it.getAttribute("class")))
-                .toList();
-            if (elements.size() != 1) {
-                throw new IllegalArgumentException("Expected single element: " + tagName + " with class " + className);
+        public URI getPdfReportUrl() throws Exception {
+            List<HtmlElement> links = page.getByXPath("//a[normalize-space(.)='Pobierz komunikat PDF']");
+            if (links.size() != 1 || links.get(0).getAttribute("href").isBlank()) {
+                throw new IllegalArgumentException("Expected a single PDF link");
             }
-            return elements.get(0);
+            return page.getFullyQualifiedUrl(links.get(0).getAttribute("href")).toURI();
+        }
+
+        private String getDate(String label) {
+            List<HtmlElement> dates = page.getByXPath(
+                "//*[contains(concat(' ', normalize-space(@class), ' '), ' topr-mobile-dates ')]/div[span[normalize-space(.)='" + label + "']]/strong");
+            if (dates.size() != 1) {
+                throw new IllegalArgumentException("Expected a single date for " + label);
+            }
+            return dates.get(0).getTextContent().trim();
         }
     }
 }

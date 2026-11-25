@@ -11,7 +11,7 @@ resource "azurerm_cosmosdb_account" "mongo" {
   kind                 = "MongoDB"
   mongo_server_version = "4.2"
 
-  enable_automatic_failover     = true
+  automatic_failover_enabled    = true
   public_network_access_enabled = true
 
   backup {
@@ -47,11 +47,12 @@ resource "azurerm_cosmosdb_account" "mongo" {
 # App Service
 
 resource "azurerm_storage_account" "function_app_storage" {
-  account_replication_type = "LRS"
-  account_tier             = "Standard"
-  location                 = azurerm_resource_group.this.location
-  name                     = "${var.function_storage_account}${var.project_unique_id}"
-  resource_group_name      = azurerm_resource_group.this.name
+  account_replication_type         = "LRS"
+  account_tier                     = "Standard"
+  location                         = azurerm_resource_group.this.location
+  name                             = "${var.function_storage_account}${var.project_unique_id}"
+  resource_group_name              = azurerm_resource_group.this.name
+  cross_tenant_replication_enabled = true
 }
 
 resource "azurerm_service_plan" "this" {
@@ -95,11 +96,11 @@ resource "azurerm_windows_function_app" "this" {
     app_scale_limit          = 5
     application_insights_key = azurerm_application_insights.this.instrumentation_key
     application_stack {
-      java_version = "17"
+      java_version = "25"
     }
   }
   app_settings = {
-    "CosmosDBConnectionString" = azurerm_cosmosdb_account.mongo.connection_strings[0]
+    "CosmosDBConnectionString" = azurerm_cosmosdb_account.mongo.primary_mongodb_connection_string
     "WEBSITE_RUN_FROM_PACKAGE" = "1"
   }
   lifecycle {

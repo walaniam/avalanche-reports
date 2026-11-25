@@ -1,10 +1,12 @@
 package walaniam.avalanches.mongo;
 
 import com.microsoft.azure.functions.ExecutionContext;
+import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.Indexes;
+import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.model.Sorts;
-import com.mongodb.client.result.InsertOneResult;
+import com.mongodb.client.result.UpdateResult;
 import org.bson.BsonString;
 import org.bson.Document;
 import walaniam.avalanches.persistence.AvalancheReport;
@@ -22,7 +24,7 @@ public class AvalancheReportMongoRepository implements AvalancheReportRepository
 
     private static final Set<IndexConfig> REQUIRED_INDEXES = Set.of(
         new IndexConfig("date", false, false),
-        new IndexConfig("expirationDate", false, false)
+        new IndexConfig("reportExpirationDate", false, false)
     );
 
     private static final String DB_NAME = "avalanche";
@@ -87,8 +89,9 @@ public class AvalancheReportMongoRepository implements AvalancheReportRepository
     public void save(AvalancheReport report) {
         logInfo(context, "Saving report: %s", report);
         mongoExecutor.execute(collection -> {
-            InsertOneResult insertResult = collection.insertOne(report);
-            logInfo(context, "Inserted: %s", insertResult);
+            UpdateResult result = collection.replaceOne(
+                Filters.eq("_id", report.getId()), report, new ReplaceOptions().upsert(true));
+            logInfo(context, "Upserted: %s", result);
         });
     }
 
@@ -100,7 +103,7 @@ public class AvalancheReportMongoRepository implements AvalancheReportRepository
         }
         return mongoExecutor.executeWithResult(collection -> collection
             .find(AvalancheReport.class)
-            .sort(Sorts.descending("expirationDate"))
+            .sort(Sorts.descending("reportExpirationDate"))
             .skip(skip)
             .limit(limit)
             .into(new ArrayList<>()));

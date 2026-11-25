@@ -11,15 +11,15 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <java.version>17</java.version>
-        <azure.functions.maven.plugin.version>1.25.0</azure.functions.maven.plugin.version>
+        <java.version>25</java.version>
+        <azure.functions.maven.plugin.version>1.42.0</azure.functions.maven.plugin.version>
         <azure.functions.java.library.version>2.2.0</azure.functions.java.library.version>
         <app.resource.group>avalanche-reports</app.resource.group>
         <app.name>avalanche-reports-app</app.name>
         <app.plan.name>avalanche-reports-plan</app.plan.name>
-        <testcontainers.version>1.19.6</testcontainers.version>
+        <testcontainers.version>2.0.5</testcontainers.version>
         <org.mapstruct.version>1.5.5.Final</org.mapstruct.version>
-        <org.projectlombok.version>1.18.30</org.projectlombok.version>
+        <org.projectlombok.version>1.18.42</org.projectlombok.version>
     </properties>
 
     <dependencies>
@@ -70,13 +70,13 @@
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>mongodb</artifactId>
+            <artifactId>testcontainers-mongodb</artifactId>
             <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
             <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>

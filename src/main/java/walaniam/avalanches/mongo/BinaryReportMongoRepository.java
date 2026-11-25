@@ -5,8 +5,9 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.Indexes;
+import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.model.Sorts;
-import com.mongodb.client.result.InsertOneResult;
+import com.mongodb.client.result.UpdateResult;
 import org.bson.BsonString;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -65,8 +66,9 @@ public class BinaryReportMongoRepository implements BinaryReportRepository {
     public void upsert(BinaryReport document) {
         logInfo(context, "Saving binary: %s", document);
         mongoExecutor.execute(collection -> {
-            InsertOneResult insertResult = collection.insertOne(document);
-            logInfo(context, "Inserted: %s", insertResult);
+            UpdateResult result = collection.replaceOne(
+                Filters.eq("_id", document.getId()), document, new ReplaceOptions().upsert(true));
+            logInfo(context, "Upserted: %s", result);
         });
     }
 
