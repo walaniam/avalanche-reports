@@ -7,6 +7,9 @@ mvn archetype:generate -DarchetypeGroupId=com.microsoft.azure -DarchetypeArtifac
 
 ## Development environment setup
 
+### Java
+Use JDK 25 for building and running the function app.
+
 ### Azure CLI
 How to install Azure CLI https://learn.microsoft.com/en-us/cli/azure/install-azure-cli
 

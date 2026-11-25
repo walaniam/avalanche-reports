@@ -4,9 +4,9 @@ import com.microsoft.azure.functions.ExecutionContext;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.mongodb.MongoDBContainer;
 import org.testcontainers.utility.DockerImageName;
 import walaniam.avalanches.function.AvalancheReportsFunctionsHandler;
 import walaniam.avalanches.mongo.BinaryReportMongoRepository;
@@ -26,7 +26,7 @@ class AvalancheReportsFunctionsHandlerIT {
     @Container
     private static final MongoDBContainer MONGO_DB_CONTAINER = new MongoDBContainer(
             DockerImageName.parse("mongo").withTag("4.2.22")
-    );
+    ).withReplicaSet();
 
     private final ExecutionContext executionContext = mock(ExecutionContext.class);
     private AvalancheReportsFunctionsHandler underTest;
