@@ -68,6 +68,9 @@ public class AvalancheReportsFunctionsHandler {
             );
         } catch (ReportFetchException e) {
             logWarn(context, "Report fetch failed, timer: " + timerInfo, e);
+        } catch (RuntimeException e) {
+            logWarn(context, "Report ingestion failed", e);
+            throw e;
         }
     }
 
@@ -92,6 +95,9 @@ public class AvalancheReportsFunctionsHandler {
             );
         } catch (ReportFetchException e) {
             logWarn(context, "Report fetch failed", e);
+        } catch (RuntimeException e) {
+            logWarn(context, "On-demand report ingestion failed", e);
+            throw e;
         }
     }
 
