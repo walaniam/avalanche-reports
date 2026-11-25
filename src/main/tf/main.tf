@@ -47,11 +47,12 @@ resource "azurerm_cosmosdb_account" "mongo" {
 # App Service
 
 resource "azurerm_storage_account" "function_app_storage" {
-  account_replication_type = "LRS"
-  account_tier             = "Standard"
-  location                 = azurerm_resource_group.this.location
-  name                     = "${var.function_storage_account}${var.project_unique_id}"
-  resource_group_name      = azurerm_resource_group.this.name
+  account_replication_type         = "LRS"
+  account_tier                     = "Standard"
+  location                         = azurerm_resource_group.this.location
+  name                             = "${var.function_storage_account}${var.project_unique_id}"
+  resource_group_name              = azurerm_resource_group.this.name
+  cross_tenant_replication_enabled = true
 }
 
 resource "azurerm_service_plan" "this" {
