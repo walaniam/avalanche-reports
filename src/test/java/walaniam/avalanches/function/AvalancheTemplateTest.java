@@ -37,10 +37,26 @@ class AvalancheTemplateTest {
             int chartStart = html.indexOf("    function createChart(", loadStart);
             html = html.substring(0, loadStart) + "    function loadReports() {}\n\n" + html.substring(chartStart);
             MockWebConnection connection = new MockWebConnection();
-            connection.setResponse(url, html);
+            connection.setResponse(url, html, "text/html", StandardCharsets.UTF_8);
             client.setWebConnection(connection);
 
             HtmlPage page = client.getPage(url);
+            assertEquals("pl", page.executeJavaScript("selectLocale(['fr-FR', 'pl-PL'])").getJavaScriptResult());
+            assertEquals("en", page.executeJavaScript("selectLocale(['de-DE'])").getJavaScriptResult());
+            page.executeJavaScript("applyTranslations(['pl-PL'])");
+            assertEquals("pl", page.getDocumentElement().getAttribute("lang"));
+            assertEquals("Stopnie zagrożenia lawinowego", page.getElementsByTagName("h1").get(0).getTextContent());
+            assertEquals("Poprzednie", page.getElementById("prevPage").getTextContent());
+            page.executeJavaScript("""
+                updateReportSummaries([
+                  {reportDate: '2026-11-25T16:00:00', reportExpirationDate: '2026-11-25T19:00:00', avalancheLevel: 1},
+                  {reportDate: '2026-11-26T16:00:00', reportExpirationDate: '2026-11-26T19:00:00', avalancheLevel: 2}
+                ], '2026-11-26')
+                """);
+            assertEquals("Stopień zagrożenia zmienił się z 1 na 2 (wzrósł o 1).",
+                page.getElementById("reportChange").getTextContent());
+            page.executeJavaScript("applyTranslations(['en-US'])");
+
             page.executeJavaScript("""
                 createChart(withMissingDays([
                   {reportExpirationDate: '2026-11-22T12:00:00', avalancheLevel: 2},

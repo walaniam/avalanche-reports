@@ -131,7 +131,7 @@
 <body>
 
 <div class="container">
-    <h1>Avalanche Danger Levels</h1>
+    <h1 data-i18n="pageHeading">Avalanche Danger Levels</h1>
 
     <div id="currentDate"></div>
 
@@ -139,7 +139,7 @@
         <canvas id="avalancheChart"></canvas>
         <div id="loadingIndicator" role="status" hidden>
             <span class="spinner" aria-hidden="true"></span>
-            <span>Loading reports...</span>
+            <span data-i18n="loadingReports">Loading reports...</span>
         </div>
     </div>
 
@@ -147,18 +147,18 @@
 
     <div id="reportSummaries" aria-live="polite">
         <section>
-            <h2>Change since previous report</h2>
-            <p id="reportChange">Loading report history...</p>
+            <h2 data-i18n="reportChangeHeading">Change since previous report</h2>
+            <p id="reportChange" data-i18n="loadingReportHistory">Loading report history...</p>
         </section>
         <section>
-            <h2>Danger levels in the last 7 days</h2>
+            <h2 data-i18n="weeklyLevelsHeading">Danger levels in the last 7 days</h2>
             <ul id="weeklyLevelCounts"></ul>
         </section>
     </div>
 
     <div id="navigation">
-        <button id="prevPage" disabled>Previous</button>
-        <button id="nextPage" disabled>Next</button>
+        <button id="prevPage" disabled data-i18n="previous">Previous</button>
+        <button id="nextPage" disabled data-i18n="next">Next</button>
     </div>
 
     <!-- Inside your comment box container, e.g., in avalanche_template.html -->
@@ -180,6 +180,92 @@
 </div>
 
 <script>
+    const translations = {
+      en: {
+        pageTitle: "Avalanche Reports",
+        pageHeading: "Avalanche Danger Levels",
+        loadingReports: "Loading reports...",
+        loadingReportHistory: "Loading report history...",
+        reportChangeHeading: "Change since previous report",
+        weeklyLevelsHeading: "Danger levels in the last 7 days",
+        previous: "Previous",
+        next: "Next",
+        missingReports: "Missing reports: {dates}",
+        avalancheLevel: "Avalanche Level",
+        dangerLevel: "Danger Level",
+        notEnoughReports: "Not enough reports to compare.",
+        noChange: "No change: Level {level}.",
+        levelChanged: "Danger level changed from {previous} to {latest} ({direction} by {difference}).",
+        increased: "increased",
+        decreased: "decreased",
+        levelCount: "Level {level}: {count} {days}",
+        day: "day",
+        days: "days",
+        noReportCount: "No report: {count} {days}",
+        reportFor: "Report for {date}",
+        reportedBy: "Reported by {reporter}, at {reportedAt}, valid until {expiresAt}",
+        pdfReport: "PDF Report",
+        loadFailure: "Failed to load avalanche reports"
+      },
+      pl: {
+        pageTitle: "Komunikaty lawinowe",
+        pageHeading: "Stopnie zagrożenia lawinowego",
+        loadingReports: "Ładowanie komunikatów...",
+        loadingReportHistory: "Ładowanie historii komunikatów...",
+        reportChangeHeading: "Zmiana od poprzedniego komunikatu",
+        weeklyLevelsHeading: "Stopnie zagrożenia w ciągu ostatnich 7 dni",
+        previous: "Poprzednie",
+        next: "Następne",
+        missingReports: "Brak komunikatów z dni: {dates}",
+        avalancheLevel: "Stopień zagrożenia lawinowego",
+        dangerLevel: "Stopień zagrożenia",
+        notEnoughReports: "Za mało komunikatów, aby je porównać.",
+        noChange: "Bez zmian: stopień {level}.",
+        levelChanged: "Stopień zagrożenia zmienił się z {previous} na {latest} ({direction} o {difference}).",
+        increased: "wzrósł",
+        decreased: "spadł",
+        levelCount: "Stopień {level}: {count} {days}",
+        day: "dzień",
+        days: "dni",
+        noReportCount: "Brak komunikatu: {count} {days}",
+        reportFor: "Komunikat z dnia {date}",
+        reportedBy: "Autor: {reporter}, data publikacji: {reportedAt}, ważny do: {expiresAt}",
+        pdfReport: "Raport PDF",
+        loadFailure: "Nie udało się wczytać komunikatów lawinowych"
+      }
+    };
+    let currentLocale = "en";
+
+    function selectLocale(browserLanguages) {
+      const languages = browserLanguages && browserLanguages.length
+        ? browserLanguages
+        : (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language]);
+      for (const language of languages) {
+        const baseLanguage = language.toLowerCase().split("-")[0];
+        if (translations[baseLanguage]) return baseLanguage;
+      }
+      return "en";
+    }
+
+    function translate(key, values) {
+      values = values || {};
+      return translations[currentLocale][key].replace(/\{(\w+)\}/g, function(_, name) {
+        return values[name];
+      });
+    }
+
+    function applyTranslations(browserLanguages) {
+      currentLocale = selectLocale(browserLanguages);
+      document.documentElement.lang = currentLocale;
+      document.title = translate("pageTitle");
+      const elements = document.querySelectorAll("[data-i18n]");
+      for (let index = 0; index < elements.length; index++) {
+        elements[index].textContent = translate(elements[index].getAttribute("data-i18n"));
+      }
+    }
+
+    applyTranslations();
+
     const FULL_REPORT_URL = "pdfs/{day}";
     const API_URL = "reports";
     let currentPage = 0;
@@ -282,7 +368,7 @@
         currentPage = page;
       } catch (err) {
         console.error(err);
-        alert("Failed to load avalanche reports");
+        alert(translate("loadFailure"));
       } finally {
         loadingIndicator.hidden = true;
         chartContainer.setAttribute('aria-busy', 'false');
@@ -297,7 +383,9 @@
       const missingDates = entries.filter(entry => !entry.report).map(entry => entry.date);
       const missingReports = document.getElementById("missingReports");
       missingReports.hidden = missingDates.length === 0;
-      missingReports.textContent = missingDates.length ? "Missing reports: " + missingDates.join(", ") : "";
+      missingReports.textContent = missingDates.length
+        ? translate("missingReports", { dates: missingDates.join(", ") })
+        : "";
 
       const ctx = document.getElementById("avalancheChart").getContext("2d");
 
@@ -306,7 +394,7 @@
         data: {
           labels,
           datasets: [{
-            label: "Avalanche Level",
+            label: translate("avalancheLevel"),
             data: levels,
             backgroundColor: barColors
           }]
@@ -337,7 +425,7 @@
               },
               title: {
                 display: true,
-                text: "Danger Level"
+                text: translate("dangerLevel")
               }
             }
           },
@@ -360,16 +448,20 @@
       const sortedReports = reports.slice().sort((a, b) => reportTimestamp(b) - reportTimestamp(a));
       const reportChange = document.getElementById("reportChange");
       if (sortedReports.length < 2) {
-        reportChange.textContent = "Not enough reports to compare.";
+        reportChange.textContent = translate("notEnoughReports");
       } else {
         const latestLevel = sortedReports[0].avalancheLevel;
         const previousLevel = sortedReports[1].avalancheLevel;
         if (latestLevel === previousLevel) {
-          reportChange.textContent = `No change: Level ${latestLevel}.`;
+          reportChange.textContent = translate("noChange", { level: latestLevel });
         } else {
-          const direction = latestLevel > previousLevel ? "increased" : "decreased";
-          reportChange.textContent =
-            `Danger level changed from ${previousLevel} to ${latestLevel} (${direction} by ${Math.abs(latestLevel - previousLevel)}).`;
+          const direction = translate(latestLevel > previousLevel ? "increased" : "decreased");
+          reportChange.textContent = translate("levelChanged", {
+            previous: previousLevel,
+            latest: latestLevel,
+            direction,
+            difference: Math.abs(latestLevel - previousLevel)
+          });
         }
       }
 
@@ -399,11 +491,18 @@
       weeklyLevelCounts.textContent = "";
       for (let level = 1; level <= 5; level++) {
         const item = document.createElement("li");
-        item.textContent = `Level ${level}: ${counts[level]} ${counts[level] === 1 ? "day" : "days"}`;
+        item.textContent = translate("levelCount", {
+          level,
+          count: counts[level],
+          days: counts[level] === 1 ? translate("day") : translate("days")
+        });
         weeklyLevelCounts.appendChild(item);
       }
       const missingItem = document.createElement("li");
-      missingItem.textContent = `No report: ${counts.missing} ${counts.missing === 1 ? "day" : "days"}`;
+      missingItem.textContent = translate("noReportCount", {
+        count: counts.missing,
+        days: counts.missing === 1 ? translate("day") : translate("days")
+      });
       weeklyLevelCounts.appendChild(missingItem);
     }
 
@@ -417,17 +516,21 @@
 
       // Populate content
       document.getElementById("commentDate").textContent =
-        "Report for " + formatDate(report.reportExpirationDate);
+        translate("reportFor", { date: formatDate(report.reportExpirationDate) });
       document.getElementById("commentText").textContent = report.comment;
       document.getElementById("commentMeta").textContent =
-        `Reported by ${report.reportedBy}, at ${report.reportDate}, valid until ${report.reportExpirationDate}`;
+        translate("reportedBy", {
+          reporter: report.reportedBy,
+          reportedAt: report.reportDate,
+          expiresAt: report.reportExpirationDate
+        });
 
       // Generate report URL with formatted date
       const reportDateStr = formatDate(report.reportExpirationDate);
       const reportUrl = FULL_REPORT_URL.replace("{day}", reportDateStr);
 
       // Create link element
-      fullReportDiv.innerHTML = `<a href="${reportUrl}" target="_blank">PDF Report</a>`;
+      fullReportDiv.innerHTML = `<a href="${reportUrl}" target="_blank">${translate("pdfReport")}</a>`;
 
       // Add event listener for close button
       closeBtn.onclick = function() {
@@ -450,7 +553,7 @@
     function displayCurrentDate() {
       const dateElement = document.getElementById("currentDate");
       const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-      const currentDate = new Date().toLocaleDateString(undefined, options);
+      const currentDate = new Date().toLocaleDateString(currentLocale, options);
       dateElement.textContent = currentDate;
     }
 
