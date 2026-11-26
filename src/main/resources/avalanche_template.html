@@ -44,6 +44,14 @@
           position: relative;
         }
 
+        #missingReports:not([hidden]) {
+          margin: 12px 0;
+          padding: 10px;
+          background: #f2f2f2;
+          border-left: 4px solid #888;
+          color: #444;
+        }
+
         #loadingIndicator:not([hidden]) {
           position: absolute;
           inset: 0;
@@ -107,6 +115,8 @@
         </div>
     </div>
 
+    <div id="missingReports" role="status" hidden></div>
+
     <div id="navigation">
         <button id="prevPage" disabled>Previous</button>
         <button id="nextPage" disabled>Next</button>
@@ -163,6 +173,26 @@
       return "gray"; // fallback
     }
 
+    function withMissingDays(reports, olderReport) {
+      const entries = [];
+      let previousDate = olderReport ? formatDate(olderReport.reportExpirationDate) : null;
+
+      for (const report of reports) {
+        const date = formatDate(report.reportExpirationDate);
+        if (previousDate) {
+          const nextDate = new Date(previousDate + "T00:00:00Z");
+          nextDate.setUTCDate(nextDate.getUTCDate() + 1);
+          while (nextDate.toISOString().substring(0, 10) < date) {
+            entries.push({ date: nextDate.toISOString().substring(0, 10), report: null });
+            nextDate.setUTCDate(nextDate.getUTCDate() + 1);
+          }
+        }
+        entries.push({ date, report });
+        previousDate = date;
+      }
+      return entries;
+    }
+
     async function loadReports(page = 0) {
       const loadingIndicator = document.getElementById('loadingIndicator');
       const chartContainer = document.getElementById('chartContainer');
@@ -173,10 +203,19 @@
 
       try {
         const response = await fetch(`${API_URL}?size=${pageSize}&page=${page}`);
+        if (!response.ok) throw new Error("Failed to fetch reports");
         const data = await response.json();
 
         // sort by date ascending
         data.sort((a, b) => new Date(a.reportExpirationDate) - new Date(b.reportExpirationDate));
+
+        let olderReport = null;
+        if (data.length > 0) {
+          const olderResponse = await fetch(`${API_URL}?size=1&page=${(page + 1) * pageSize}`);
+          if (!olderResponse.ok) throw new Error("Failed to fetch adjacent report");
+          const olderReports = await olderResponse.json();
+          olderReport = olderReports[0];
+        }
 
         // store globally for access in click handler
         window.currentReports = data;
@@ -187,7 +226,7 @@
         }
 
         // create chart with new data
-        createChart(data);
+        createChart(withMissingDays(data, olderReport));
 
         // update current page
         currentPage = page;
@@ -201,10 +240,14 @@
       }
     }
 
-    function createChart(reports) {
-      const labels = reports.map(r => formatDate(r.reportExpirationDate));
-      const levels = reports.map(r => r.avalancheLevel);
-      const barColors = levels.map(level => getColorByLevel(level));
+    function createChart(entries) {
+      const labels = entries.map(entry => entry.date);
+      const levels = entries.map(entry => entry.report ? entry.report.avalancheLevel : null);
+      const barColors = levels.map(level => level === null ? "transparent" : getColorByLevel(level));
+      const missingDates = entries.filter(entry => !entry.report).map(entry => entry.date);
+      const missingReports = document.getElementById("missingReports");
+      missingReports.hidden = missingDates.length === 0;
+      missingReports.textContent = missingDates.length ? "Missing reports: " + missingDates.join(", ") : "";
 
       const ctx = document.getElementById("avalancheChart").getContext("2d");
 
@@ -218,6 +261,21 @@
             backgroundColor: barColors
           }]
         },
+        plugins: [{
+          id: "missingReports",
+          afterDatasetsDraw: chart => {
+            const { ctx, chartArea, scales } = chart;
+            const width = Math.min(24, scales.x.width / entries.length * 0.7);
+            entries.forEach((entry, index) => {
+              if (entry.report) return;
+              const x = scales.x.getPixelForValue(index);
+              ctx.save();
+              ctx.fillStyle = "rgba(128, 128, 128, 0.12)";
+              ctx.fillRect(x - width / 2, chartArea.top, width, chartArea.bottom - chartArea.top);
+              ctx.restore();
+            });
+          }
+        }],
         options: {
           responsive: true,
           scales: {
@@ -236,7 +294,7 @@
           onClick: (event, elements) => {
             if (elements.length > 0) {
               const index = elements[0].index;
-              showComment(reports[index]);
+              if (entries[index].report) showComment(entries[index].report);
             }
           }
         }
