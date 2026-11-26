@@ -52,6 +52,34 @@
           color: #444;
         }
 
+        #reportSummaries {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 20px;
+          margin-top: 20px;
+        }
+
+        #reportSummaries section {
+          flex: 1 1 260px;
+          padding: 12px;
+          background: #f5f7fa;
+          border-radius: 6px;
+        }
+
+        #reportSummaries h2 {
+          margin: 0 0 8px;
+          font-size: 18px;
+        }
+
+        #reportSummaries p,
+        #reportSummaries ul {
+          margin: 0;
+        }
+
+        #reportSummaries ul {
+          padding-left: 20px;
+        }
+
         #loadingIndicator:not([hidden]) {
           position: absolute;
           inset: 0;
@@ -117,6 +145,17 @@
 
     <div id="missingReports" role="status" hidden></div>
 
+    <div id="reportSummaries" aria-live="polite">
+        <section>
+            <h2>Change since previous report</h2>
+            <p id="reportChange">Loading report history...</p>
+        </section>
+        <section>
+            <h2>Danger levels in the last 7 days</h2>
+            <ul id="weeklyLevelCounts"></ul>
+        </section>
+    </div>
+
     <div id="navigation">
         <button id="prevPage" disabled>Previous</button>
         <button id="nextPage" disabled>Next</button>
@@ -145,6 +184,9 @@
     const API_URL = "reports";
     let currentPage = 0;
     const pageSize = 20; // default size
+    let cachedReports = [];
+    let nextReportPage = 0;
+    let reportsExhausted = false;
 
     let currentChartInstance = null; // To keep track of the Chart instance
 
@@ -173,9 +215,9 @@
       return "gray"; // fallback
     }
 
-    function withMissingDays(reports, olderReport) {
+    function withMissingDays(reports) {
       const entries = [];
-      let previousDate = olderReport ? formatDate(olderReport.reportExpirationDate) : null;
+      let previousDate = null;
 
       for (const report of reports) {
         const date = formatDate(report.reportExpirationDate);
@@ -193,6 +235,11 @@
       return entries;
     }
 
+    function entriesForPage(entries, page) {
+      const end = Math.max(0, entries.length - page * pageSize);
+      return entries.slice(Math.max(0, end - pageSize), end);
+    }
+
     async function loadReports(page = 0) {
       const loadingIndicator = document.getElementById('loadingIndicator');
       const chartContainer = document.getElementById('chartContainer');
@@ -202,23 +249,25 @@
       document.getElementById('nextPage').disabled = true;
 
       try {
-        const response = await fetch(`${API_URL}?size=${pageSize}&page=${page}`);
-        if (!response.ok) throw new Error("Failed to fetch reports");
-        const data = await response.json();
-
-        // sort by date ascending
-        data.sort((a, b) => new Date(a.reportExpirationDate) - new Date(b.reportExpirationDate));
-
-        let olderReport = null;
-        if (data.length > 0) {
-          const olderResponse = await fetch(`${API_URL}?size=1&page=${(page + 1) * pageSize}`);
-          if (!olderResponse.ok) throw new Error("Failed to fetch adjacent report");
-          const olderReports = await olderResponse.json();
-          olderReport = olderReports[0];
+        if (page === 0) {
+          cachedReports = [];
+          nextReportPage = 0;
+          reportsExhausted = false;
         }
 
-        // store globally for access in click handler
-        window.currentReports = data;
+        let entries = withMissingDays(cachedReports.slice().reverse());
+        while (entries.length < (page + 1) * pageSize && !reportsExhausted) {
+          const response = await fetch(`${API_URL}?size=${pageSize}&page=${nextReportPage}`);
+          if (!response.ok) throw new Error("Failed to fetch reports");
+          const data = await response.json();
+          cachedReports.push(...data);
+          nextReportPage++;
+          reportsExhausted = data.length < pageSize;
+          entries = withMissingDays(cachedReports.slice().reverse());
+        }
+
+        const pageEntries = entriesForPage(entries, page);
+        window.currentReports = pageEntries.filter(entry => entry.report).map(entry => entry.report);
 
         // Destroy previous chart if exists
         if (currentChartInstance) {
@@ -226,7 +275,8 @@
         }
 
         // create chart with new data
-        createChart(withMissingDays(data, olderReport));
+        createChart(pageEntries);
+        updateReportSummaries(cachedReports);
 
         // update current page
         currentPage = page;
@@ -299,6 +349,62 @@
           }
         }
       });
+    }
+
+    function reportTimestamp(report) {
+      return new Date(report.reportDate || report.reportExpirationDate).getTime();
+    }
+
+    function updateReportSummaries(reports, endDate) {
+      if (!endDate) endDate = formatDate(new Date().toISOString());
+      const sortedReports = reports.slice().sort((a, b) => reportTimestamp(b) - reportTimestamp(a));
+      const reportChange = document.getElementById("reportChange");
+      if (sortedReports.length < 2) {
+        reportChange.textContent = "Not enough reports to compare.";
+      } else {
+        const latestLevel = sortedReports[0].avalancheLevel;
+        const previousLevel = sortedReports[1].avalancheLevel;
+        if (latestLevel === previousLevel) {
+          reportChange.textContent = `No change: Level ${latestLevel}.`;
+        } else {
+          const direction = latestLevel > previousLevel ? "increased" : "decreased";
+          reportChange.textContent =
+            `Danger level changed from ${previousLevel} to ${latestLevel} (${direction} by ${Math.abs(latestLevel - previousLevel)}).`;
+        }
+      }
+
+      const reportsByDate = new Map();
+      for (const report of reports) {
+        const reportDay = formatDate(report.reportExpirationDate);
+        const existing = reportsByDate.get(reportDay);
+        if (!existing || reportTimestamp(report) > reportTimestamp(existing)) {
+          reportsByDate.set(reportDay, report);
+        }
+      }
+
+      const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, missing: 0 };
+      for (let offset = 0; offset < 7; offset++) {
+        const windowDate = new Date(`${endDate}T00:00:00Z`);
+        windowDate.setUTCDate(windowDate.getUTCDate() - offset);
+        const report = reportsByDate.get(windowDate.toISOString().substring(0, 10));
+        if (report && Number.isInteger(report.avalancheLevel) &&
+            report.avalancheLevel >= 1 && report.avalancheLevel <= 5) {
+          counts[report.avalancheLevel]++;
+        } else {
+          counts.missing++;
+        }
+      }
+
+      const weeklyLevelCounts = document.getElementById("weeklyLevelCounts");
+      weeklyLevelCounts.textContent = "";
+      for (let level = 1; level <= 5; level++) {
+        const item = document.createElement("li");
+        item.textContent = `Level ${level}: ${counts[level]} ${counts[level] === 1 ? "day" : "days"}`;
+        weeklyLevelCounts.appendChild(item);
+      }
+      const missingItem = document.createElement("li");
+      missingItem.textContent = `No report: ${counts.missing} ${counts.missing === 1 ? "day" : "days"}`;
+      weeklyLevelCounts.appendChild(missingItem);
     }
 
     function showComment(report) {
