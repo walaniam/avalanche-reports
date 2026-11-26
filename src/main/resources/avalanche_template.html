@@ -40,6 +40,37 @@
           font-size: 14px;
         }
 
+        #chartContainer {
+          position: relative;
+        }
+
+        #loadingIndicator:not([hidden]) {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          background: rgba(255, 255, 255, 0.8);
+        }
+
+        .spinner {
+          width: 24px;
+          height: 24px;
+          border: 3px solid #d6e5f2;
+          border-top-color: #0077cc;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .spinner { animation: none; }
+        }
+
         #commentBox {
           margin-top: 20px;
           padding: 15px;
@@ -68,10 +99,16 @@
 
     <div id="currentDate"></div>
 
-    <canvas id="avalancheChart"></canvas>
+    <div id="chartContainer" aria-busy="false">
+        <canvas id="avalancheChart"></canvas>
+        <div id="loadingIndicator" role="status" hidden>
+            <span class="spinner" aria-hidden="true"></span>
+            <span>Loading reports...</span>
+        </div>
+    </div>
 
     <div id="navigation">
-        <button id="prevPage">Previous</button>
+        <button id="prevPage" disabled>Previous</button>
         <button id="nextPage" disabled>Next</button>
     </div>
 
@@ -127,6 +164,13 @@
     }
 
     async function loadReports(page = 0) {
+      const loadingIndicator = document.getElementById('loadingIndicator');
+      const chartContainer = document.getElementById('chartContainer');
+      loadingIndicator.hidden = false;
+      chartContainer.setAttribute('aria-busy', 'true');
+      document.getElementById('prevPage').disabled = true;
+      document.getElementById('nextPage').disabled = true;
+
       try {
         const response = await fetch(`${API_URL}?size=${pageSize}&page=${page}`);
         const data = await response.json();
@@ -147,10 +191,13 @@
 
         // update current page
         currentPage = page;
-        updateButtons();
       } catch (err) {
         console.error(err);
         alert("Failed to load avalanche reports");
+      } finally {
+        loadingIndicator.hidden = true;
+        chartContainer.setAttribute('aria-busy', 'false');
+        updateButtons();
       }
     }
 
@@ -246,7 +293,6 @@
     // Initialize
     window.onload = () => {
       displayCurrentDate();
-      updateButtons();
       loadReports(0);
     };
 </script>
